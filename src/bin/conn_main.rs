@@ -1,9 +1,10 @@
 use clickhouse::Row;
 use schema_syncr::{
-	conn::{DBAccessor, DBCreator, DsParam, DBClient},
-	error::IResult, database::{DB_CLICK_HOUSE, DB_MYSQL},
+	conn::{ClickHouseClient, DBAccessor, DBCreator, DsParam, MysqlClient},
+	error::IResult,
 };
 use serde::Deserialize;
+use uuid::Uuid;
 
 fn main() {
 	test_mysql_conn();
@@ -13,12 +14,12 @@ fn main() {
 // mysql
 fn test_mysql_conn() {
 	let ds = DsParam {
-		uuid: "mysql".to_string(),
-		url: "mysql://".to_string(),
+		uuid: Uuid::new_v4().to_string(),
+		url: "mysql://admin:123456@127.0.0.1:3306/platform".to_string(),
 		..Default::default()
 	};
 
-	let pool = DBClient::<DB_MYSQL>::get_or_init(ds).unwrap();
+	let pool = MysqlClient::get_or_init(ds).unwrap();
 	let vec: Vec<String> = pool.query_list("show databases").unwrap();
 	println!("mysql: {:?}", vec);
 }
@@ -31,15 +32,15 @@ fn test_ch_conn() {
 	}
 
 	let ds = DsParam {
-		uuid: "ch".to_string(),
+		uuid: Uuid::new_v4().to_string(),
 		url: "http://127.0.0.1:8123".to_string(),
-		user: "".to_string(),
-		password: "".to_string(),
+		user: "admin".to_string(),
+		password: "123456".to_string(),
 		compression: "none".to_string(),
 		..Default::default()
 	};
 
-	let client = DBClient::<DB_CLICK_HOUSE>::get_or_init(ds).unwrap();
+	let client = ClickHouseClient::get_or_init(ds).unwrap();
 	let vec: IResult<Option<RowData>> = client.query_one("show databases");
 	println!("clickhouse: {:?}", vec);
 }

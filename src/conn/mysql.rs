@@ -1,20 +1,21 @@
 use std::{borrow::Borrow, collections::HashMap, sync::RwLock};
 
-use mysql::{
-	prelude::{FromRow, Queryable},
-	Opts, Pool,
-};
+use mysql::{prelude::Queryable, Opts, Pool};
 use once_cell::sync::Lazy;
 
 use crate::{database::DB_MYSQL, error::IResult};
 
 use super::{DBAccessor, DBClient, DBCreator, DsParam};
 
-static CLIENTS: Lazy<RwLock<HashMap<DsParam, DBClient<DB_MYSQL>>>> =
+pub use ::mysql::prelude::FromRow as MysqlRow;
+
+pub type MysqlClient = DBClient<DB_MYSQL>;
+
+static CLIENTS: Lazy<RwLock<HashMap<DsParam, MysqlClient>>> =
 	Lazy::new(|| RwLock::new(HashMap::new()));
 
-impl DBCreator<DB_MYSQL> for DBClient<DB_MYSQL> {
-	fn get_or_init(ds: DsParam) -> IResult<DBClient<DB_MYSQL>> {
+impl DBCreator<DB_MYSQL> for MysqlClient {
+	fn get_or_init(ds: DsParam) -> IResult<MysqlClient> {
 		let read_lock = CLIENTS.read().unwrap();
 		match read_lock.get(&ds) {
 			Some(pool) => Ok(pool.clone()),
@@ -23,7 +24,7 @@ impl DBCreator<DB_MYSQL> for DBClient<DB_MYSQL> {
 
 				let opts = Opts::from_url(&ds.url)?;
 				let pool = Pool::new(opts)?;
-				let db_pool = DBClient::<DB_MYSQL>::Mysql(pool);
+				let db_pool = MysqlClient::Mysql(pool);
 				let cloned = db_pool.clone();
 				let mut write_lock = CLIENTS.write().unwrap();
 				write_lock.insert(ds, db_pool);
@@ -33,13 +34,13 @@ impl DBCreator<DB_MYSQL> for DBClient<DB_MYSQL> {
 		}
 	}
 
-	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<DBClient<DB_MYSQL>> {
+	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<MysqlClient> {
 		let read_lock = CLIENTS.read().unwrap();
 		read_lock.get(t.borrow()).map(|pool| pool.clone())
 	}
 }
 
-impl<T: FromRow> DBAccessor<T> for DBClient<DB_MYSQL> {
+impl<T: MysqlRow> DBAccessor<T> for MysqlClient {
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>> {
 		match self {
 			DBClient::Mysql(pool) => {

@@ -10,13 +10,15 @@ use clickhouse::{Client, Compression};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-pub use clickhouse::Row as ClickHouseRow;
+pub use ::clickhouse::Row as ClickHouseRow;
 
-static CLIENTS: Lazy<RwLock<HashMap<DsParam, DBClient<DB_CLICK_HOUSE>>>> =
+pub type ClickHouseClient = DBClient<DB_CLICK_HOUSE>;
+
+static CLIENTS: Lazy<RwLock<HashMap<DsParam, ClickHouseClient>>> =
 	Lazy::new(|| RwLock::new(HashMap::new()));
 
-impl DBCreator<DB_CLICK_HOUSE> for DBClient<DB_CLICK_HOUSE> {
-	fn get_or_init(ds: DsParam) -> IResult<DBClient<DB_CLICK_HOUSE>> {
+impl DBCreator<DB_CLICK_HOUSE> for ClickHouseClient {
+	fn get_or_init(ds: DsParam) -> IResult<ClickHouseClient> {
 		let read_lock = CLIENTS.read().unwrap();
 		match read_lock.get(&ds) {
 			Some(cli) => Ok(cli.clone()),
@@ -33,7 +35,7 @@ impl DBCreator<DB_CLICK_HOUSE> for DBClient<DB_CLICK_HOUSE> {
 					client = client.with_option(key, value);
 				}
 
-				let ref_pool = DBClient::<DB_CLICK_HOUSE>::ClickHouse(Arc::new(client));
+				let ref_pool = ClickHouseClient::ClickHouse(Arc::new(client));
 				let cloned = ref_pool.clone();
 				let mut write_lock = CLIENTS.write().unwrap();
 				write_lock.insert(ds, ref_pool);
@@ -43,21 +45,20 @@ impl DBCreator<DB_CLICK_HOUSE> for DBClient<DB_CLICK_HOUSE> {
 		}
 	}
 
-	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<DBClient<DB_CLICK_HOUSE>> {
+	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<ClickHouseClient> {
 		let read_lock = CLIENTS.read().unwrap();
 		read_lock.get(t.borrow()).map(|pool| pool.clone())
 	}
 }
 
-impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBAccessor<T> for DBClient<DB_CLICK_HOUSE> {
+impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBAccessor<T> for ClickHouseClient {
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>> {
 		match self {
 			DBClient::ClickHouse(client) => {
 				let rows = tokio::runtime::Builder::new_current_thread()
 					.enable_all()
-					.build()
-					.unwrap()
-					.block_on(async { client.query(sql.as_ref()).fetch_all::<T>().await })?;
+					.build()?
+					.block_on(client.query(sql.as_ref()).fetch_all::<T>())?;
 				Ok(rows)
 			}
 			_ => unreachable!(),
@@ -69,9 +70,8 @@ impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBAccessor<T> for DBClient<DB_C
 			DBClient::ClickHouse(client) => {
 				let result = tokio::runtime::Builder::new_current_thread()
 					.enable_all()
-					.build()
-					.unwrap()
-					.block_on(async { client.query(sql.as_ref()).fetch_one::<T>().await });
+					.build()?
+					.block_on(client.query(sql.as_ref()).fetch_one::<T>());
 
 				match result {
 					Ok(row) => Ok(Some(row)),

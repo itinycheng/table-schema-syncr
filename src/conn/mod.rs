@@ -11,8 +11,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{database::DbType, error::IResult};
 
-pub mod clickhouse;
-pub mod mysql;
+pub use self::{
+	clickhouse::{ClickHouseClient, ClickHouseRow},
+	mysql::{MysqlClient, MysqlRow},
+};
+
+mod clickhouse;
+mod mysql;
 
 #[derive(Clone)]
 pub enum DBClient<const DB: u8> {
