@@ -1,46 +1,27 @@
-use std::{borrow::Borrow, collections::HashMap, sync::RwLock};
-
 use mysql::{prelude::Queryable, Opts, Pool};
-use once_cell::sync::Lazy;
 
-use crate::{database::DB_MYSQL, error::IResult};
+use crate::{
+	database::DB_MYSQL,
+	error::{IError, IResult},
+};
 
-use super::{DBAccessor, DBClient, DBCreator, DsParam};
+use super::{DBClient, DBParam, DBQuery, MysqlRow};
 
-pub use ::mysql::prelude::FromRow as MysqlRow;
+pub(super) fn create_mysql_client(ds: &DBParam) -> IResult<DBClient> {
+	let opts = Opts::from_url(&ds.url)?;
+	let pool = Pool::new(opts)?;
 
-pub type MysqlClient = DBClient<DB_MYSQL>;
-
-static CLIENTS: Lazy<RwLock<HashMap<DsParam, MysqlClient>>> =
-	Lazy::new(|| RwLock::new(HashMap::new()));
-
-impl DBCreator<DB_MYSQL> for MysqlClient {
-	fn get_or_init(ds: DsParam) -> IResult<MysqlClient> {
-		let read_lock = CLIENTS.read().unwrap();
-		match read_lock.get(&ds) {
-			Some(pool) => Ok(pool.clone()),
-			None => {
-				drop(read_lock);
-
-				let opts = Opts::from_url(&ds.url)?;
-				let pool = Pool::new(opts)?;
-				let db_pool = MysqlClient::Mysql(pool);
-				let cloned = db_pool.clone();
-				let mut write_lock = CLIENTS.write().unwrap();
-				write_lock.insert(ds, db_pool);
-
-				Ok(cloned)
-			}
+	{
+		let mut conn = pool.get_conn()?;
+		if !conn.as_mut().ping() {
+			return Err(IError::PromptError(format!("Ping mysql failed, uuid: {}", ds.uuid)));
 		}
 	}
 
-	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<MysqlClient> {
-		let read_lock = CLIENTS.read().unwrap();
-		read_lock.get(t.borrow()).map(|pool| pool.clone())
-	}
+	Ok(DBClient::Mysql(pool))
 }
 
-impl<T: MysqlRow> DBAccessor<T> for MysqlClient {
+impl<T: MysqlRow> DBQuery<DB_MYSQL, T> for DBClient {
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>> {
 		match self {
 			DBClient::Mysql(pool) => {

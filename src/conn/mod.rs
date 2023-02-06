@@ -2,46 +2,72 @@ use std::{
 	borrow::Borrow,
 	collections::HashMap,
 	hash::{Hash, Hasher},
-	sync::Arc,
+	sync::{Arc, RwLock},
 };
-
 use ::clickhouse::Client;
 use ::mysql::Pool;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::DbType, error::IResult};
-
-pub use self::{
-	clickhouse::{ClickHouseClient, ClickHouseRow},
-	mysql::{MysqlClient, MysqlRow},
+use crate::{
+	database::DbType,
+	error::{IError, IResult},
 };
+
+pub use ::clickhouse::Row as ClickHouseRow;
+pub use ::mysql::prelude::FromRow as MysqlRow;
 
 mod clickhouse;
 mod mysql;
 
+static DB_CLIENTS: Lazy<RwLock<HashMap<DBParam, DBClient>>> =
+	Lazy::new(|| RwLock::new(HashMap::new()));
+
 #[derive(Clone)]
-pub enum DBClient<const DB: u8> {
+pub enum DBClient {
 	ClickHouse(Arc<Client>),
 	Mysql(Pool),
 }
 
-pub trait DBCreator<const DB: u8> {
-	const DB_TYPE: DbType = DbType::to_enum(DB);
+impl DBClient {
+	pub fn get_or_init(ds: DBParam) -> IResult<DBClient> {
+		match Self::get(&ds) {
+			Some(cli) => Ok(cli.clone()),
+			None => {
+				let client = match &ds.db_type {
+					&DbType::MySQL => mysql::create_mysql_client(&ds),
+					&DbType::ClickHouse => clickhouse::create_ch_client(&ds),
+					_ => {
+						Err(IError::PromptError(format!("Unsupported db type: {:?}", &ds.db_type)))
+					}
+				};
 
-	fn get_or_init(ds: DsParam) -> IResult<DBClient<DB>>;
+				if client.is_ok() {
+					let mut write_lock = DB_CLIENTS.write().unwrap();
+					write_lock.insert(ds, client.as_ref().unwrap().clone());
+				}
 
-	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<DBClient<DB>>;
+				client
+			}
+		}
+	}
+
+	pub fn get<T: Borrow<String>>(t: &T) -> Option<DBClient> {
+		let read_lock = DB_CLIENTS.read().unwrap();
+		read_lock.get(t.borrow()).map(|pool| pool.clone())
+	}
 }
 
-pub trait DBAccessor<T> {
+pub trait DBQuery<const DB: u8, T> {
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>>;
 
 	fn query_one<I: AsRef<str>>(&self, sql: I) -> IResult<Option<T>>;
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Default)]
-pub struct DsParam {
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
+pub struct DBParam {
 	pub uuid: String,
+	pub db_type: DbType,
 	pub url: String,
 	pub database: String,
 	pub user: String,
@@ -50,13 +76,13 @@ pub struct DsParam {
 	pub options: HashMap<String, String>,
 }
 
-impl Hash for DsParam {
+impl Hash for DBParam {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.uuid.hash(state);
 	}
 }
 
-impl Borrow<String> for DsParam {
+impl Borrow<String> for DBParam {
 	fn borrow(&self) -> &String {
 		&self.uuid
 	}

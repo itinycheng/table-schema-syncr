@@ -8,11 +8,14 @@ pub enum IError {
 	#[error("IO error: {0}")]
 	IOError(#[from] std::io::Error),
 
-	#[error("Access mysql error: {0:?}")]
+	#[error("Access mysql error: {0}")]
 	MysqlError(#[from] mysql::error::Error),
 
-	#[error("Mysql url error: {0:?}")]
+	#[error("Mysql url error: {0}")]
 	MysqlUrlError(#[from] mysql::error::UrlError),
+
+	#[error("Prompt error: {0}")]
+	PromptError(String),
 
 	#[error(transparent)]
 	AnyError(#[from] anyhow::Error),

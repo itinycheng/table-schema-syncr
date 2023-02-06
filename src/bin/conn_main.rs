@@ -1,7 +1,7 @@
 use clickhouse::Row;
 use schema_syncr::{
-	conn::{ClickHouseClient, DBAccessor, DBCreator, DsParam, MysqlClient},
-	error::IResult,
+	conn::{DBClient, DBParam, DBQuery},
+	database::{DbType, DB_CLICK_HOUSE, DB_MYSQL},
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -13,14 +13,16 @@ fn main() {
 
 // mysql
 fn test_mysql_conn() {
-	let ds = DsParam {
+	let ds = DBParam {
 		uuid: Uuid::new_v4().to_string(),
+		db_type: DbType::MySQL,
 		url: "mysql://admin:123456@127.0.0.1:3306/platform".to_string(),
 		..Default::default()
 	};
 
-	let pool = MysqlClient::get_or_init(ds).unwrap();
-	let vec: Vec<String> = pool.query_list("show databases").unwrap();
+	let client = DBClient::get_or_init(ds).unwrap();
+	let vec =
+		<DBClient as DBQuery<DB_MYSQL, std::string::String>>::query_list(&client, "show databases");
 	println!("mysql: {:?}", vec);
 }
 
@@ -31,8 +33,9 @@ fn test_ch_conn() {
 		pub name: String,
 	}
 
-	let ds = DsParam {
+	let ds = DBParam {
 		uuid: Uuid::new_v4().to_string(),
+		db_type: DbType::ClickHouse,
 		url: "http://127.0.0.1:8123".to_string(),
 		user: "admin".to_string(),
 		password: "123456".to_string(),
@@ -40,7 +43,10 @@ fn test_ch_conn() {
 		..Default::default()
 	};
 
-	let client = ClickHouseClient::get_or_init(ds).unwrap();
-	let vec: IResult<Option<RowData>> = client.query_one("show databases");
+	let client = DBClient::get_or_init(ds).unwrap();
+	let vec = <DBClient as DBQuery<DB_CLICK_HOUSE, std::string::String>>::query_one(
+		&client,
+		"show databases",
+	);
 	println!("clickhouse: {:?}", vec);
 }

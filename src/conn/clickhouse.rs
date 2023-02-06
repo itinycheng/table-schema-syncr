@@ -1,57 +1,36 @@
-use std::{
-	borrow::Borrow,
-	collections::HashMap,
-	sync::{Arc, RwLock},
+use std::sync::Arc;
+use super::{ClickHouseRow, DBClient, DBParam, DBQuery};
+use crate::{
+	database::DB_CLICK_HOUSE,
+	error::{IError, IResult},
 };
-
-use super::{DBAccessor, DBClient, DBCreator, DsParam};
-use crate::{database::DB_CLICK_HOUSE, error::IResult};
 use clickhouse::{Client, Compression};
-use once_cell::sync::Lazy;
 use serde::Deserialize;
 
-pub use ::clickhouse::Row as ClickHouseRow;
-
-pub type ClickHouseClient = DBClient<DB_CLICK_HOUSE>;
-
-static CLIENTS: Lazy<RwLock<HashMap<DsParam, ClickHouseClient>>> =
-	Lazy::new(|| RwLock::new(HashMap::new()));
-
-impl DBCreator<DB_CLICK_HOUSE> for ClickHouseClient {
-	fn get_or_init(ds: DsParam) -> IResult<ClickHouseClient> {
-		let read_lock = CLIENTS.read().unwrap();
-		match read_lock.get(&ds) {
-			Some(cli) => Ok(cli.clone()),
-			None => {
-				drop(read_lock);
-
-				let mut client = Client::default()
-					.with_url(&ds.url)
-					.with_database(&ds.database)
-					.with_user(&ds.user)
-					.with_password(&ds.password)
-					.with_compression(to_compression(&ds.compression));
-				for (key, value) in &ds.options {
-					client = client.with_option(key, value);
-				}
-
-				let ref_pool = ClickHouseClient::ClickHouse(Arc::new(client));
-				let cloned = ref_pool.clone();
-				let mut write_lock = CLIENTS.write().unwrap();
-				write_lock.insert(ds, ref_pool);
-
-				Ok(cloned)
-			}
-		}
+pub(super) fn create_ch_client(ds: &DBParam) -> IResult<DBClient> {
+	let mut client = Client::default()
+		.with_url(&ds.url)
+		.with_database(&ds.database)
+		.with_user(&ds.user)
+		.with_password(&ds.password)
+		.with_compression(to_compression(&ds.compression));
+	for (key, value) in &ds.options {
+		client = client.with_option(key, value);
 	}
 
-	fn get_by_uuid<T: Borrow<String>>(t: &T) -> Option<ClickHouseClient> {
-		let read_lock = CLIENTS.read().unwrap();
-		read_lock.get(t.borrow()).map(|pool| pool.clone())
+	if tokio::runtime::Builder::new_current_thread()
+		.enable_all()
+		.build()?
+		.block_on(client.query("select 1").fetch_one::<u8>())
+		.is_err()
+	{
+		return Err(IError::PromptError(format!("Ping ClickHouse failed, uuid: {}", ds.uuid)));
 	}
+
+	Ok(DBClient::ClickHouse(Arc::new(client)))
 }
 
-impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBAccessor<T> for ClickHouseClient {
+impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBQuery<DB_CLICK_HOUSE, T> for DBClient {
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>> {
 		match self {
 			DBClient::ClickHouse(client) => {
