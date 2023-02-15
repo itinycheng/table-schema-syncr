@@ -3,10 +3,10 @@ use std::fs;
 use directories::UserDirs;
 use rusqlite::Connection;
 
-use crate::{error::IResult};
+use crate::error::IResult;
 
 #[derive(Debug)]
-struct Person {
+pub struct Person {
 	id: i32,
 	name: String,
 	data: Option<Vec<u8>>,

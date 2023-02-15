@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use super::{ClickHouseRow, DBClient, DBParam, DBQuery};
 use crate::{
 	database::DB_CLICK_HOUSE,
@@ -6,6 +5,7 @@ use crate::{
 };
 use clickhouse::{Client, Compression};
 use serde::Deserialize;
+use std::sync::Arc;
 
 pub(super) fn create_ch_client(ds: &DBParam) -> IResult<DBClient> {
 	let mut client = Client::default()

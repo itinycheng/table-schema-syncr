@@ -1,13 +1,13 @@
+use ::clickhouse::Client;
+use ::mysql::Pool;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::{
 	borrow::Borrow,
 	collections::HashMap,
 	hash::{Hash, Hasher},
 	sync::{Arc, RwLock},
 };
-use ::clickhouse::Client;
-use ::mysql::Pool;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
 
 use crate::{
 	database::DbType,

@@ -17,6 +17,9 @@ pub enum IError {
 	#[error("Sqlite error: {0}")]
 	SqliteError(#[from] rusqlite::Error),
 
+	#[error("Iced error: {0}")]
+	IcedError(#[from] iced::Error),
+
 	#[error("Prompt error: {0}")]
 	PromptError(String),
 
