@@ -28,7 +28,7 @@ pub fn exists(path: &Path) -> bool {
 	Path::new(path).exists()
 }
 
-pub fn create_not_exist_file(path: &Path) -> io::Result<()> {
+pub fn create_if_not_exist(path: &Path) -> io::Result<()> {
 	if !exists(path) {
 		let _ = create_file(&path);
 	}

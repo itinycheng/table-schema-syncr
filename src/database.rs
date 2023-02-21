@@ -24,3 +24,18 @@ impl DbType {
 		}
 	}
 }
+
+impl std::fmt::Display for DbType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				DbType::MySQL => "MySQL",
+				DbType::ClickHouse => "ClickHouse",
+				DbType::HBase => "HBase",
+				_ => panic!("Unknown db type"),
+			}
+		)
+	}
+}
