@@ -5,6 +5,7 @@ use std::{
 };
 
 use directories::UserDirs;
+use once_cell::sync::OnceCell;
 
 const APP_ROOT_PATH: &'static str = ".schema_syncr";
 
@@ -12,16 +13,19 @@ const APP_DATA_FILE: &'static str = "data.db";
 
 const APP_LOG_FILE: &'static str = "logs/app.log";
 
-pub fn app_root_dir() -> PathBuf {
-	UserDirs::new().unwrap().home_dir().join(APP_ROOT_PATH)
+pub fn app_root_dir() -> &'static PathBuf {
+	static ROOT_DIR: OnceCell<PathBuf> = OnceCell::new();
+	ROOT_DIR.get_or_init(|| UserDirs::new().unwrap().home_dir().join(APP_ROOT_PATH))
 }
 
-pub fn app_db_file() -> PathBuf {
-	app_root_dir().join(APP_DATA_FILE)
+pub fn app_db_file() -> &'static PathBuf {
+	static DB_FILE: OnceCell<PathBuf> = OnceCell::new();
+	DB_FILE.get_or_init(|| app_root_dir().join(APP_DATA_FILE))
 }
 
-pub fn app_log_file() -> PathBuf {
-	app_root_dir().join(APP_LOG_FILE)
+pub fn app_log_file() -> &'static PathBuf {
+	static LOG_FILE: OnceCell<PathBuf> = OnceCell::new();
+	LOG_FILE.get_or_init(|| app_root_dir().join(APP_LOG_FILE))
 }
 
 pub fn exists(path: &Path) -> bool {

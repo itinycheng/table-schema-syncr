@@ -36,7 +36,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("type", &app.connection_params.db_type, Message::ConnectionDbType)
+					text_input("type", &app.conn_conf.db_type, Message::ConnectionDbType)
 				]
 				.spacing(5),
 				row![
@@ -44,7 +44,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("url", &app.connection_params.url, Message::ConnectionUrl)
+					text_input("url", &app.conn_conf.url, Message::ConnectionUrl)
 				]
 				.spacing(5),
 				row![
@@ -52,7 +52,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("username", &app.connection_params.username, Message::ConnectionUsername)
+					text_input("username", &app.conn_conf.username, Message::ConnectionUsername)
 				]
 				.spacing(5),
 				row![
@@ -60,7 +60,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("password", &app.connection_params.password, Message::ConnectionPassword)
+					text_input("password", &app.conn_conf.password, Message::ConnectionPassword)
 				]
 				.spacing(5),
 				row![

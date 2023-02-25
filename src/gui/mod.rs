@@ -3,7 +3,7 @@ use iced::{
 	Application, Command, Element, Subscription,
 };
 
-use crate::db;
+use crate::store;
 
 mod content;
 mod header;
@@ -14,15 +14,15 @@ mod style;
 #[derive(Debug, Default)]
 pub struct App {
 	pub show_conn_modal: bool,
-	pub connection_params: ConnectionParams,
+	pub conn_conf: ConnConf,
 }
 
 #[derive(Debug, Default)]
-pub struct ConnectionParams {
+pub struct ConnConf {
+	pub db_type: String,
 	pub url: String,
 	pub username: String,
 	pub password: String,
-	pub db_type: String,
 }
 
 #[derive(Debug, Clone)]
@@ -64,29 +64,29 @@ impl Application for App {
 			}
 			Message::CloseConnectionForm => {
 				self.show_conn_modal = false;
-				self.connection_params = ConnectionParams::default();
+				self.conn_conf = ConnConf::default();
 				widget::focus_next()
 			}
 			Message::SubmitConnectionForm => {
 				self.show_conn_modal = false;
-				db::save_conn_params(&self.connection_params);
-				self.connection_params = ConnectionParams::default();
+				let _ = store::save_conn_conf(&self.conn_conf);
+				self.conn_conf = ConnConf::default();
 				widget::focus_next()
 			}
 			Message::ConnectionDbType(db_type) => {
-				self.connection_params.db_type = db_type;
+				self.conn_conf.db_type = db_type;
 				Command::none()
 			}
 			Message::ConnectionUrl(url) => {
-				self.connection_params.url = url;
+				self.conn_conf.url = url;
 				Command::none()
 			}
 			Message::ConnectionUsername(username) => {
-				self.connection_params.username = username;
+				self.conn_conf.username = username;
 				Command::none()
 			}
 			Message::ConnectionPassword(password) => {
-				self.connection_params.password = password;
+				self.conn_conf.password = password;
 				Command::none()
 			}
 			Message::Nothing => Command::none(),

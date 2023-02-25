@@ -5,7 +5,7 @@ pub mod column;
 pub mod conf;
 pub mod conn;
 pub mod database;
-pub mod db;
+pub mod store;
 pub mod error;
 pub mod gui;
 pub mod table;

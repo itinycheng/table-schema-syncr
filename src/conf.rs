@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::PathBuf;
 
 use chrono::Local;
 use log::info;
@@ -7,18 +7,19 @@ use tracing_appender::rolling;
 use tracing_log::LogTracer;
 use tracing_subscriber::{fmt::time::FormatTime, EnvFilter};
 
-use crate::util;
+use crate::{store, util};
 
 pub(crate) fn app_init() {
 	let log_file = util::app_log_file();
-	util::create_if_not_exist(&log_file).unwrap();
-	init_logger(&log_file);
+	util::create_if_not_exist(log_file).unwrap();
+	init_logger(log_file);
 
 	let db_file = util::app_db_file();
-	util::create_if_not_exist(&db_file).unwrap();
+	util::create_if_not_exist(db_file).unwrap();
+	store::init_db_if_needed().unwrap();
 }
 
-fn init_logger(log_file: &Path) {
+fn init_logger(log_file: &PathBuf) {
 	LogTracer::init().expect("Failed to set logger");
 
 	let log_path = log_file.parent().unwrap();
