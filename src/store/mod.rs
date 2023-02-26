@@ -3,6 +3,7 @@ use std::rc::Rc;
 use log::error;
 use once_cell::unsync::Lazy;
 use rusqlite::Connection;
+use validator::Validate;
 
 use crate::{
 	error::{IError, IResult},
@@ -40,12 +41,15 @@ pub fn get_conn() -> IResult<Rc<Connection>> {
 }
 
 pub fn save_conn_conf(conf: &ConnConf) -> IResult<()> {
+	conf.validate()?;
+
 	let conn = get_conn()?;
 	let uuid = uuid::Uuid::new_v4().to_string();
 	conn.execute(
-		"INSERT INTO t_conn_conf(uuid, type url, username, password) VALUES (?1, ?2, ?3, ?4, ?5)",
+		"INSERT INTO t_conn_conf(uuid, type, url, username, password) VALUES (?1, ?2, ?3, ?4, ?5)",
 		(&uuid, &conf.db_type, &conf.url, &conf.username, &conf.password),
 	)?;
+
 	Ok(())
 }
 

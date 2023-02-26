@@ -20,6 +20,9 @@ pub enum IError {
 	#[error("Iced error: {0}")]
 	IcedError(#[from] iced::Error),
 
+	#[error("Validate error: {0}")]
+	ValidateError(#[from] validator::ValidationErrors),
+
 	#[error("Prompt error: {0}")]
 	PromptError(String),
 
