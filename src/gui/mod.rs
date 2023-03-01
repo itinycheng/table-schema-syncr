@@ -4,7 +4,7 @@ use iced::{
 };
 use validator::Validate;
 
-use crate::store;
+use crate::{database::DbType, store};
 
 use self::toast::Toast;
 
@@ -24,8 +24,8 @@ pub struct App {
 
 #[derive(Debug, Default, Validate)]
 pub struct ConnConf {
-	#[validate(length(min = 1))]
-	pub db_type: String,
+	#[validate(required)]
+	pub db_type: Option<DbType>,
 	#[validate(length(min = 1))]
 	pub url: String,
 	#[validate(length(min = 1))]
@@ -41,7 +41,7 @@ pub enum Message {
 	ConnectionUrl(String),
 	ConnectionUsername(String),
 	ConnectionPassword(String),
-	ConnectionDbType(String),
+	ConnectionDbType(DbType),
 	Event(iced::Event),
 	CloseToast(usize),
 	Nothing,
@@ -92,7 +92,7 @@ impl Application for App {
 				}
 			},
 			Message::ConnectionDbType(db_type) => {
-				self.conn_conf.db_type = db_type;
+				self.conn_conf.db_type = Some(db_type);
 				Command::none()
 			}
 			Message::ConnectionUrl(url) => {

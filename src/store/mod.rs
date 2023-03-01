@@ -47,7 +47,13 @@ pub fn save_conn_conf(conf: &ConnConf) -> IResult<()> {
 	let uuid = uuid::Uuid::new_v4().to_string();
 	conn.execute(
 		"INSERT INTO t_conn_conf(uuid, type, url, username, password) VALUES (?1, ?2, ?3, ?4, ?5)",
-		(&uuid, &conf.db_type, &conf.url, &conf.username, &conf.password),
+		(
+			&uuid,
+			&conf.db_type.as_ref().map(|db_ty| db_ty.to_string()).unwrap(),
+			&conf.url,
+			&conf.username,
+			&conf.password,
+		),
 	)?;
 
 	Ok(())

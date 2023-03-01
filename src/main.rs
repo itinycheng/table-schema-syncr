@@ -5,9 +5,9 @@ pub mod column;
 pub mod conf;
 pub mod conn;
 pub mod database;
-pub mod store;
 pub mod error;
 pub mod gui;
+pub mod store;
 pub mod table;
 pub mod util;
 
@@ -19,6 +19,27 @@ pub fn main() -> error::IResult<()> {
 
 #[cfg(test)]
 mod tests {
+
+	#[test]
+	fn test_raw_pointer() {
+		let num = 1;
+		unsafe {
+			let raw = &num as *const i32 as *mut i32;
+			*raw += 1;
+		}
+		println!("num = {}", num);
+	}
+
+	#[test]
+	fn it_works() {
+		let a: i32 = 1.into();
+		let b: i32 = From::from(2);
+		let c: Box<i32> = 3.into();
+		println!("{} {} {}", a, b, c);
+
+		let func = age;
+		func.test();
+	}
 
 	trait Content {
 		fn test(&self);
@@ -35,16 +56,5 @@ mod tests {
 
 	pub fn age(str: String) -> i32 {
 		str.parse::<i32>().unwrap()
-	}
-
-	#[test]
-	fn it_works() {
-		let a: i32 = 1.into();
-		let b: i32 = From::from(2);
-		let c: Box<i32> = 3.into();
-		println!("{} {} {}", a, b, c);
-
-		let func = age;
-		func.test();
 	}
 }

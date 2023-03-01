@@ -1,7 +1,7 @@
 use mysql::{prelude::Queryable, Opts, Pool};
 
 use crate::{
-	database::DB_MYSQL,
+	database::DbType,
 	error::{IError, IResult},
 };
 
@@ -21,7 +21,7 @@ pub(super) fn create_mysql_client(ds: &DBParam) -> IResult<DBClient> {
 	Ok(DBClient::Mysql(pool))
 }
 
-impl<T: MysqlRow> DBQuery<DB_MYSQL, T> for DBClient {
+impl<T: MysqlRow> DBQuery<{ DbType::DB_MYSQL }, T> for DBClient {
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>> {
 		match self {
 			DBClient::Mysql(pool) => {

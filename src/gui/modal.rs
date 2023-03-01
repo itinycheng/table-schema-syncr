@@ -285,6 +285,18 @@ where
 			renderer,
 		)
 	}
+
+	fn overlay<'c>(
+		&'c mut self,
+		layout: Layout<'_>,
+		renderer: &Renderer,
+	) -> Option<overlay::Element<'c, Message, Renderer>> {
+		self.content.as_widget_mut().overlay(
+			self.tree,
+			layout.children().next().unwrap(),
+			renderer,
+		)
+	}
 }
 
 impl<'a, Message, Renderer> From<Modal<'a, Message, Renderer>>

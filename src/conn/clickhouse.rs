@@ -1,6 +1,6 @@
 use super::{ClickHouseRow, DBClient, DBParam, DBQuery};
 use crate::{
-	database::DB_CLICK_HOUSE,
+	database::DbType,
 	error::{IError, IResult},
 };
 use clickhouse::{Client, Compression};
@@ -30,7 +30,9 @@ pub(super) fn create_ch_client(ds: &DBParam) -> IResult<DBClient> {
 	Ok(DBClient::ClickHouse(Arc::new(client)))
 }
 
-impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBQuery<DB_CLICK_HOUSE, T> for DBClient {
+impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBQuery<{ DbType::DB_CLICK_HOUSE }, T>
+	for DBClient
+{
 	fn query_list<I: AsRef<str>>(&self, sql: I) -> IResult<Vec<T>> {
 		match self {
 			DBClient::ClickHouse(client) => {

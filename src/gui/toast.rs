@@ -478,7 +478,12 @@ impl<'a, 'b, Message> overlay::Overlay<Message, Renderer>
 			.unwrap_or_default()
 	}
 
-	fn is_over(&self, layout: Layout<'_>, cursor_position: Point) -> bool {
+	fn is_over(
+		&self,
+		layout: Layout<'_>,
+		_renderer: &Renderer,
+		cursor_position: Point,
+	) -> bool {
 		layout
 			.children()
 			.any(|layout| layout.bounds().contains(cursor_position))

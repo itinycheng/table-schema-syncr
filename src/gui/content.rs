@@ -1,12 +1,12 @@
 use iced::{
 	alignment::Vertical,
 	theme,
-	widget::{button, column, container, row, text, text_input, Column, Container},
+	widget::{button, column, container, row, text, text_input, Column, Container, pick_list},
 	Length, Renderer,
 };
 
 use super::{style::border_style, App, Message};
-use crate::gui::modal::Modal;
+use crate::{gui::modal::Modal, database::DbType};
 
 pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 	let mut content = container(Column::new().push(text("content")))
@@ -36,7 +36,12 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("type", &app.conn_conf.db_type, Message::ConnectionDbType)
+						pick_list(
+							&DbType::ALL[..],
+							app.conn_conf.db_type,
+							Message::ConnectionDbType,
+						).width(Length::Fill)
+						.placeholder("Choose database type...")
 				]
 				.spacing(5),
 				row![
