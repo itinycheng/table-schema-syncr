@@ -30,6 +30,14 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 	container(
 		column![
 			text("New Connection").size(20),
+			row![
+					text("Name")
+						.size(16)
+						.width(Length::Fixed(80.0))
+						.vertical_alignment(Vertical::Center),
+					text_input("name", &app.conn_conf.name, Message::EditConnName)
+				]
+				.spacing(5),
 			column![
 				row![
 					text("Type")
@@ -39,7 +47,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						pick_list(
 							&DbType::ALL[..],
 							app.conn_conf.db_type,
-							Message::ConnectionDbType,
+							Message::EditConnDbType,
 						).width(Length::Fill)
 						.placeholder("Choose database type...")
 				]
@@ -49,7 +57,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("url", &app.conn_conf.url, Message::ConnectionUrl)
+					text_input("url", &app.conn_conf.url, Message::EditConnUrl)
 				]
 				.spacing(5),
 				row![
@@ -57,7 +65,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("username", &app.conn_conf.username, Message::ConnectionUsername)
+					text_input("username", &app.conn_conf.username, Message::EditConnUsername)
 				]
 				.spacing(5),
 				row![
@@ -65,7 +73,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("password", &app.conn_conf.password, Message::ConnectionPassword)
+					text_input("password", &app.conn_conf.password, Message::EditConnPassword)
 				]
 				.spacing(5),
 				row![

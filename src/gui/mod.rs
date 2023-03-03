@@ -1,10 +1,12 @@
 use iced::{
 	widget::{self, Column, Row},
-	Application, Command, Element, Subscription,
+	Application, Command, Element, Subscription, Length,
 };
-use validator::Validate;
 
-use crate::{database::DbType, store};
+use crate::{
+	database::DbType,
+	store::conn_conf::{self, ConnConf},
+};
 
 use self::toast::Toast;
 
@@ -22,26 +24,16 @@ pub struct App {
 	pub toasts: Vec<Toast>,
 }
 
-#[derive(Debug, Default, Validate)]
-pub struct ConnConf {
-	#[validate(required)]
-	pub db_type: Option<DbType>,
-	#[validate(length(min = 1))]
-	pub url: String,
-	#[validate(length(min = 1))]
-	pub username: String,
-	pub password: String,
-}
-
 #[derive(Debug, Clone)]
 pub enum Message {
 	OpenConnectionForm,
 	SubmitConnectionForm,
 	CloseConnectionForm,
-	ConnectionUrl(String),
-	ConnectionUsername(String),
-	ConnectionPassword(String),
-	ConnectionDbType(DbType),
+	EditConnName(String),
+	EditConnDbType(DbType),
+	EditConnUrl(String),
+	EditConnUsername(String),
+	EditConnPassword(String),
 	Event(iced::Event),
 	CloseToast(usize),
 	Nothing,
@@ -76,7 +68,7 @@ impl Application for App {
 				self.conn_conf = ConnConf::default();
 				widget::focus_next()
 			}
-			Message::SubmitConnectionForm => match store::save_conn_conf(&self.conn_conf) {
+			Message::SubmitConnectionForm => match conn_conf::insert(&self.conn_conf) {
 				Ok(_) => {
 					self.show_conn_modal = false;
 					self.conn_conf = ConnConf::default();
@@ -91,19 +83,23 @@ impl Application for App {
 					Command::none()
 				}
 			},
-			Message::ConnectionDbType(db_type) => {
+			Message::EditConnName(name) => {
+				self.conn_conf.name = name;
+				Command::none()
+			}
+			Message::EditConnDbType(db_type) => {
 				self.conn_conf.db_type = Some(db_type);
 				Command::none()
 			}
-			Message::ConnectionUrl(url) => {
+			Message::EditConnUrl(url) => {
 				self.conn_conf.url = url;
 				Command::none()
 			}
-			Message::ConnectionUsername(username) => {
+			Message::EditConnUsername(username) => {
 				self.conn_conf.username = username;
 				Command::none()
 			}
-			Message::ConnectionPassword(password) => {
+			Message::EditConnPassword(password) => {
 				self.conn_conf.password = password;
 				Command::none()
 			}
@@ -120,7 +116,8 @@ impl Application for App {
 		let user_view = Column::new()
 			.push(header::view(self))
 			.push(Row::new().push(sidebar::view()).push(content::view(self)))
-			.padding(10);
+			.padding(10)
+			.width(Length::Fill);
 
 		toast::Manager::new(user_view, &self.toasts, Message::CloseToast).timeout(2).into()
 	}

@@ -43,3 +43,14 @@ impl std::fmt::Display for DbType {
 		)
 	}
 }
+
+impl<T: AsRef<str>> From<T> for DbType {
+	fn from(value: T) -> Self {
+		match value.as_ref() {
+			"MySQL" => Self::MySQL,
+			"ClickHouse" => Self::ClickHouse,
+			"HBase" => Self::HBase,
+			_ => Self::Unknown,
+		}
+	}
+}

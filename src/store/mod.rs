@@ -1,20 +1,17 @@
 use std::rc::Rc;
 
-use log::error;
 use once_cell::unsync::Lazy;
 use rusqlite::Connection;
-use validator::Validate;
 
-use crate::{
-	error::{IError, IResult},
-	gui::ConnConf,
-	util::app_db_file,
-};
+use crate::{error::IResult, util::app_db_file};
+
+pub mod conn_conf;
 
 const APP_TABLES: [(&'static str, &'static str); 1] = [(
 	"t_conn_conf",
 	"CREATE TABLE t_conn_conf (
 		uuid  TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
 		type  TEXT NOT NULL,
 		url  TEXT NOT NULL,
 		username  TEXT,
@@ -22,46 +19,20 @@ const APP_TABLES: [(&'static str, &'static str); 1] = [(
 	)",
 )];
 
-//? Err will be cached in local thread?
-pub fn get_conn() -> IResult<Rc<Connection>> {
+//? If return type is something like `Result<>`, err may be cached?
+pub fn get_conn<'a>() -> Rc<Connection> {
 	thread_local! {
-		static CONN: Lazy<IResult<Rc<Connection>>> = Lazy::new(|| {
-			let conn = Connection::open(app_db_file().as_path().clone())?;
-			Ok(Rc::new(conn))
+		static CONN: Lazy<Rc<Connection>> = Lazy::new(|| {
+			Rc::new(Connection::open(app_db_file().as_path().clone()).unwrap())
 		})
 	}
 
-	CONN.with(|conn| match conn.as_ref() {
-		Ok(rc) => Ok(rc.clone()),
-		Err(e) => {
-			error!("Create connection failed, Caused by: {}", e);
-			Err(IError::PromptError("Create connection failed".to_string()))
-		}
-	})
-}
-
-pub fn save_conn_conf(conf: &ConnConf) -> IResult<()> {
-	conf.validate()?;
-
-	let conn = get_conn()?;
-	let uuid = uuid::Uuid::new_v4().to_string();
-	conn.execute(
-		"INSERT INTO t_conn_conf(uuid, type, url, username, password) VALUES (?1, ?2, ?3, ?4, ?5)",
-		(
-			&uuid,
-			&conf.db_type.as_ref().map(|db_ty| db_ty.to_string()).unwrap(),
-			&conf.url,
-			&conf.username,
-			&conf.password,
-		),
-	)?;
-
-	Ok(())
+	CONN.with(|conn| (*conn).clone())
 }
 
 /// Create tables if necessary.
 pub fn init_db_if_needed() -> IResult<()> {
-	let conn = get_conn()?;
+	let conn = get_conn();
 
 	let mut stmt = conn.prepare("SELECT name FROM sqlite_master WHERE type='table'")?;
 	let existing_tables = stmt
@@ -79,4 +50,33 @@ pub fn init_db_if_needed() -> IResult<()> {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+	use std::{
+		rc::Rc,
+		time::{SystemTime, UNIX_EPOCH},
+	};
+
+	use once_cell::unsync::Lazy;
+
+	use crate::error::{IError, IResult};
+
+	#[test]
+	fn test_thread_local() {
+		thread_local! {
+			static CONN: Lazy<IResult<Rc<i32>>> = Lazy::new(|| {
+				let timestamp = SystemTime::now()
+					.duration_since(UNIX_EPOCH)
+					.unwrap()
+					.as_secs();
+				Err(IError::PromptError(format!("error: {}", timestamp)))
+			})
+		}
+
+		for i in 0..5 {
+			CONN.with(|res| match res.as_ref() {
+				Ok(value) => println!("i = {}, {:?}", i, value),
+				Err(e) => println!("{:?}", e),
+			});
+		}
+	}
+}
