@@ -5,7 +5,7 @@ use crate::{database::DbType, error::IResult};
 
 use super::get_conn;
 
-#[derive(Debug, Default, Validate)]
+#[derive(Debug, Default, Validate, Clone)]
 pub struct ConnConf {
 	pub uuid: String,
 	#[validate(length(min = 1))]
@@ -17,6 +17,14 @@ pub struct ConnConf {
 	#[validate(length(min = 1))]
 	pub username: String,
 	pub password: String,
+}
+
+pub fn insert_or_update(conf: &ConnConf) -> IResult<()> {
+	if conf.uuid.is_empty() {
+		insert(conf)
+	} else {
+		update(conf)
+	}
 }
 
 pub fn insert(conf: &ConnConf) -> IResult<()> {
@@ -33,6 +41,25 @@ pub fn insert(conf: &ConnConf) -> IResult<()> {
 			&conf.url,
 			&conf.username,
 			&conf.password,
+		),
+	)?;
+
+	Ok(())
+}
+
+pub fn update(conf: &ConnConf) -> IResult<()> {
+	conf.validate()?;
+
+	let conn = get_conn();
+	conn.execute(
+		"UPDATE t_conn_conf set name=?1, type=?2, url=?3, username=?4, password=?5 WHERE uuid = ?6",
+		(
+			&conf.name,
+			&conf.db_type.as_ref().map(|db_ty| db_ty.to_string()).unwrap(),
+			&conf.url,
+			&conf.username,
+			&conf.password,
+			&conf.uuid,
 		),
 	)?;
 
@@ -59,7 +86,8 @@ pub fn query_by_uuid(uuid: &String) -> IResult<ConnConf> {
 
 pub fn list_all() -> IResult<Vec<ConnConf>> {
 	let conn = get_conn();
-	let mut stmt = conn.prepare("SELECT uuid, name, type, url, username, password FROM t_conn_conf")?;
+	let mut stmt =
+		conn.prepare("SELECT uuid, name, type, url, username, password FROM t_conn_conf")?;
 	let list = stmt
 		.query_map((), |row| {
 			Ok(ConnConf {

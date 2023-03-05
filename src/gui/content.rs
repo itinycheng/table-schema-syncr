@@ -1,12 +1,12 @@
 use iced::{
 	alignment::Vertical,
 	theme,
-	widget::{button, column, container, row, text, text_input, Column, Container, pick_list},
+	widget::{button, column, container, pick_list, row, text, text_input, Column, Container},
 	Length, Renderer,
 };
 
 use super::{style::border_style, App, Message};
-use crate::{gui::modal::Modal, database::DbType};
+use crate::{database::DbType, gui::modal::Modal};
 
 pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 	let mut content = container(Column::new().push(text("content")))
@@ -31,24 +31,21 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 		column![
 			text("New Connection").size(20),
 			row![
-					text("Name")
-						.size(16)
-						.width(Length::Fixed(80.0))
-						.vertical_alignment(Vertical::Center),
-					text_input("name", &app.conn_conf.name, Message::EditConnName)
-				]
-				.spacing(5),
+				text("Name")
+					.size(16)
+					.width(Length::Fixed(80.0))
+					.vertical_alignment(Vertical::Center),
+				text_input("name", &app.edit_conn.name, Message::EditConnName)
+			]
+			.spacing(5),
 			column![
 				row![
 					text("Type")
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-						pick_list(
-							&DbType::ALL[..],
-							app.conn_conf.db_type,
-							Message::EditConnDbType,
-						).width(Length::Fill)
+					pick_list(&DbType::ALL[..], app.edit_conn.db_type, Message::EditConnDbType,)
+						.width(Length::Fill)
 						.placeholder("Choose database type...")
 				]
 				.spacing(5),
@@ -57,7 +54,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("url", &app.conn_conf.url, Message::EditConnUrl)
+					text_input("url", &app.edit_conn.url, Message::EditConnUrl)
 				]
 				.spacing(5),
 				row![
@@ -65,7 +62,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("username", &app.conn_conf.username, Message::EditConnUsername)
+					text_input("username", &app.edit_conn.username, Message::EditConnUsername)
 				]
 				.spacing(5),
 				row![
@@ -73,7 +70,7 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 						.size(16)
 						.width(Length::Fixed(80.0))
 						.vertical_alignment(Vertical::Center),
-					text_input("password", &app.conn_conf.password, Message::EditConnPassword)
+					text_input("password", &app.edit_conn.password, Message::EditConnPassword)
 				]
 				.spacing(5),
 				row![

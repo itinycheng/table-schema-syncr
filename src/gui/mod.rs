@@ -1,6 +1,6 @@
 use iced::{
 	widget::{self, Column, Row},
-	Application, Command, Element, Subscription, Length,
+	Application, Command, Element, Length, Subscription,
 };
 
 use crate::{
@@ -20,13 +20,15 @@ mod toast;
 #[derive(Debug, Default)]
 pub struct App {
 	pub show_conn_modal: bool,
-	pub conn_conf: ConnConf,
+	pub edit_conn: ConnConf,
+	pub all_conns: Vec<ConnConf>,
 	pub toasts: Vec<Toast>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-	OpenConnectionForm,
+	RefreshConns,
+	EditConnForm(Option<usize>),
 	SubmitConnectionForm,
 	CloseConnectionForm,
 	EditConnName(String),
@@ -34,7 +36,7 @@ pub enum Message {
 	EditConnUrl(String),
 	EditConnUsername(String),
 	EditConnPassword(String),
-	Event(iced::Event),
+	IcedEvent(iced::Event),
 	CloseToast(usize),
 	Nothing,
 }
@@ -46,7 +48,7 @@ impl Application for App {
 	type Flags = ();
 
 	fn new(_: Self::Flags) -> (Self, Command<Self::Message>) {
-		(App::default(), Command::none())
+		(App { all_conns: conn_conf::list_all().unwrap(), ..Default::default() }, Command::none())
 	}
 
 	fn title(&self) -> String {
@@ -54,24 +56,32 @@ impl Application for App {
 	}
 
 	fn subscription(&self) -> Subscription<Self::Message> {
-		iced::subscription::events().map(Message::Event)
+		iced::subscription::events().map(Message::IcedEvent)
 	}
 
 	fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
-			Message::OpenConnectionForm => {
+			Message::RefreshConns => {
+				self.all_conns = conn_conf::list_all().unwrap();
+				Command::none()
+			}
+			Message::EditConnForm(idx_opt) => {
+				if let Some(idx) = idx_opt {
+					self.all_conns.get(idx).into_iter().for_each(|e| self.edit_conn = e.clone())
+				}
+
 				self.show_conn_modal = true;
 				widget::focus_next()
 			}
 			Message::CloseConnectionForm => {
 				self.show_conn_modal = false;
-				self.conn_conf = ConnConf::default();
+				self.edit_conn = ConnConf::default();
 				widget::focus_next()
 			}
-			Message::SubmitConnectionForm => match conn_conf::insert(&self.conn_conf) {
+			Message::SubmitConnectionForm => match conn_conf::insert_or_update(&self.edit_conn) {
 				Ok(_) => {
 					self.show_conn_modal = false;
-					self.conn_conf = ConnConf::default();
+					self.edit_conn = ConnConf::default();
 					widget::focus_next()
 				}
 				Err(e) => {
@@ -84,30 +94,29 @@ impl Application for App {
 				}
 			},
 			Message::EditConnName(name) => {
-				self.conn_conf.name = name;
+				self.edit_conn.name = name;
 				Command::none()
 			}
 			Message::EditConnDbType(db_type) => {
-				self.conn_conf.db_type = Some(db_type);
+				self.edit_conn.db_type = Some(db_type);
 				Command::none()
 			}
 			Message::EditConnUrl(url) => {
-				self.conn_conf.url = url;
+				self.edit_conn.url = url;
 				Command::none()
 			}
 			Message::EditConnUsername(username) => {
-				self.conn_conf.username = username;
+				self.edit_conn.username = username;
 				Command::none()
 			}
 			Message::EditConnPassword(password) => {
-				self.conn_conf.password = password;
+				self.edit_conn.password = password;
 				Command::none()
 			}
 			Message::CloseToast(index) => {
 				self.toasts.remove(index);
 				Command::none()
 			}
-			Message::Nothing => Command::none(),
 			_ => Command::none(),
 		}
 	}
