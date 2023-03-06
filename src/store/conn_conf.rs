@@ -66,6 +66,12 @@ pub fn update(conf: &ConnConf) -> IResult<()> {
 	Ok(())
 }
 
+pub fn delete(uuid: &String) -> IResult<()> {
+	let conn = get_conn();
+	conn.execute("DELETE FROM t_conn_conf WHERE uuid = ?1", (uuid,))?;
+	Ok(())
+}
+
 pub fn query_by_uuid(uuid: &String) -> IResult<ConnConf> {
 	let conn = get_conn();
 	Ok(conn.query_row(

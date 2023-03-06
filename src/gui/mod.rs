@@ -27,10 +27,10 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-	RefreshConns,
-	EditConnForm(Option<usize>),
-	SubmitConnectionForm,
-	CloseConnectionForm,
+	EditConnection(Option<usize>),
+	DeleteConnection(usize),
+	SubmitConnForm,
+	CloseConnForm,
 	EditConnName(String),
 	EditConnDbType(DbType),
 	EditConnUrl(String),
@@ -56,29 +56,41 @@ impl Application for App {
 	}
 
 	fn subscription(&self) -> Subscription<Self::Message> {
-		iced::subscription::events().map(Message::IcedEvent)
+		// iced::subscription::events().map(Message::IcedEvent)
+		Subscription::none()
 	}
 
 	fn update(&mut self, message: Message) -> Command<Message> {
 		match message {
-			Message::RefreshConns => {
-				self.all_conns = conn_conf::list_all().unwrap();
-				Command::none()
-			}
-			Message::EditConnForm(idx_opt) => {
+			Message::EditConnection(idx_opt) => {
 				if let Some(idx) = idx_opt {
-					self.all_conns.get(idx).into_iter().for_each(|e| self.edit_conn = e.clone())
+					self.all_conns
+						.get(idx)
+						.into_iter()
+						.for_each(|cached| self.edit_conn = cached.clone())
 				}
 
 				self.show_conn_modal = true;
 				widget::focus_next()
 			}
-			Message::CloseConnectionForm => {
+			Message::DeleteConnection(idx) => {
+				if self
+					.all_conns
+					.get(idx)
+					.map(|cached| conn_conf::delete(&cached.uuid).is_ok())
+					.is_some()
+				{
+					self.all_conns.remove(idx);
+				}
+
+				Command::none()
+			}
+			Message::CloseConnForm => {
 				self.show_conn_modal = false;
 				self.edit_conn = ConnConf::default();
 				widget::focus_next()
 			}
-			Message::SubmitConnectionForm => match conn_conf::insert_or_update(&self.edit_conn) {
+			Message::SubmitConnForm => match conn_conf::insert_or_update(&self.edit_conn) {
 				Ok(_) => {
 					self.show_conn_modal = false;
 					self.edit_conn = ConnConf::default();
@@ -124,7 +136,7 @@ impl Application for App {
 	fn view(&self) -> Element<Message> {
 		let user_view = Column::new()
 			.push(header::view(self))
-			.push(Row::new().push(sidebar::view()).push(content::view(self)))
+			.push(Row::new().push(sidebar::view(self)).push(content::view(self)))
 			.padding(10)
 			.width(Length::Fill);
 

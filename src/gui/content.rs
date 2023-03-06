@@ -15,12 +15,11 @@ pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 		.style(border_style());
 
 	if app.show_conn_modal {
-		content = container(
-			Modal::new(content, connection_form(app)).on_blur(Message::CloseConnectionForm),
-		)
-		.width(Length::FillPortion(4))
-		.height(Length::Fill)
-		.style(border_style())
+		content =
+			container(Modal::new(content, connection_form(app)).on_blur(Message::CloseConnForm))
+				.width(Length::FillPortion(4))
+				.height(Length::Fill)
+				.style(border_style())
 	}
 
 	content
@@ -74,8 +73,8 @@ fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 				]
 				.spacing(5),
 				row![
-					button(text("Submit")).on_press(Message::SubmitConnectionForm),
-					button(text("Close")).on_press(Message::CloseConnectionForm),
+					button(text("Submit")).on_press(Message::SubmitConnForm),
+					button(text("Close")).on_press(Message::CloseConnForm),
 				]
 				.align_items(iced::Alignment::End)
 				.spacing(5)

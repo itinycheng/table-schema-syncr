@@ -4,19 +4,16 @@ use iced::{
 	Alignment, Length, Renderer,
 };
 
-use crate::{
-	gui::style::icon::{delete_icon, edit_icon},
-	store::conn_conf,
-};
+use crate::gui::style::icon::{delete_icon, edit_icon};
 
 use super::{
 	style::{border_style, sidebar_style},
-	Message,
+	App, Message,
 };
 
-pub fn view<'a>() -> Container<'a, Message, Renderer> {
-	let column_list = conn_conf::list_all()
-		.unwrap()
+pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
+	let column_list = app
+		.all_conns
 		.iter()
 		.enumerate()
 		.fold(Column::new(), |base, col| {
@@ -26,10 +23,10 @@ pub fn view<'a>() -> Container<'a, Message, Renderer> {
 						text(&col.1.name).size(24).width(Length::Fill),
 						button(edit_icon())
 							.style(theme::Button::Text)
-							.on_press(Message::EditConnForm(Some(col.0))),
+							.on_press(Message::EditConnection(Some(col.0))),
 						button(delete_icon())
 							.style(theme::Button::Text)
-							.on_press(Message::CloseConnectionForm)
+							.on_press(Message::DeleteConnection(col.0))
 					]
 					.spacing(5),
 				)
