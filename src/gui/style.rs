@@ -21,26 +21,16 @@ pub fn border_style() -> theme::Container {
 	Container::Custom(Box::new(Style))
 }
 
-pub fn sidebar_style() -> theme::Container {
-	pub struct Style;
-	impl container::StyleSheet for Style {
-		type Style = Theme;
-
-		fn appearance(&self, _: &Self::Style) -> container::Appearance {
-			container::Appearance {
-				border_color: Color::TRANSPARENT,
-				border_width: 1.0,
-				background: Some(iced::Background::Color(Color::from_rgb(0.0, 0.9, 0.0))),
-				..Default::default()
-			}
-		}
+pub fn sidebar_item_style(active: bool) -> theme::Button {
+	if active {
+		theme::Button::Primary
+	} else {
+		theme::Button::Secondary
 	}
-
-	Container::Custom(Box::new(Style))
 }
 
 pub mod icon {
-    use iced::{Font, widget::Text};
+	use iced::{widget::Text, Font};
 
 	const ICONS: Font =
 		Font::External { name: "Icons", bytes: include_bytes!("../../fonts/icons.ttf") };

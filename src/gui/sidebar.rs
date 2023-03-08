@@ -7,7 +7,7 @@ use iced::{
 use crate::gui::style::icon::{delete_icon, edit_icon};
 
 use super::{
-	style::{border_style, sidebar_style},
+	style::{border_style, sidebar_item_style},
 	App, Message,
 };
 
@@ -20,12 +20,17 @@ pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 			base.push(
 				container(
 					row![
-						text(&col.1.name).size(24).width(Length::Fill),
+						button(text(&col.1.name).size(20))
+							.width(Length::Fill)
+							.style(sidebar_item_style(
+								matches!(&app.selected_conn, Some(uuid) if uuid == &col.1.uuid)
+							))
+							.on_press(Message::SelectedConnection(col.1.uuid.clone())),
 						button(edit_icon())
-							.style(theme::Button::Text)
+							.style(theme::Button::Secondary)
 							.on_press(Message::EditConnection(Some(col.0))),
 						button(delete_icon())
-							.style(theme::Button::Text)
+							.style(theme::Button::Secondary)
 							.on_press(Message::DeleteConnection(col.0))
 					]
 					.spacing(5),
@@ -33,7 +38,7 @@ pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 				.width(Length::Fill)
 				.padding(5)
 				.center_y()
-				.style(sidebar_style()),
+				.style(border_style()),
 			)
 		})
 		.spacing(5)

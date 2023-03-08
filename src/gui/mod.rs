@@ -5,12 +5,14 @@ use iced::{
 
 use crate::{
 	database::DbType,
+	error::IError,
 	store::conn_conf::{self, ConnConf},
 };
 
 use self::toast::Toast;
 
 mod content;
+mod event_handler;
 mod header;
 mod modal;
 mod sidebar;
@@ -22,6 +24,7 @@ pub struct App {
 	pub show_conn_modal: bool,
 	pub edit_conn: ConnConf,
 	pub all_conns: Vec<ConnConf>,
+	pub selected_conn: Option<String>,
 	pub toasts: Vec<Toast>,
 }
 
@@ -29,6 +32,7 @@ pub struct App {
 pub enum Message {
 	EditConnection(Option<usize>),
 	DeleteConnection(usize),
+	SelectedConnection(String),
 	SubmitConnForm,
 	CloseConnForm,
 	EditConnName(String),
@@ -56,8 +60,7 @@ impl Application for App {
 	}
 
 	fn subscription(&self) -> Subscription<Self::Message> {
-		// iced::subscription::events().map(Message::IcedEvent)
-		Subscription::none()
+		iced::subscription::events().map(Message::IcedEvent)
 	}
 
 	fn update(&mut self, message: Message) -> Command<Message> {
@@ -85,23 +88,30 @@ impl Application for App {
 
 				Command::none()
 			}
+			Message::SelectedConnection(uuid) => {
+				self.selected_conn = Some(uuid);
+				Command::none()
+			}
 			Message::CloseConnForm => {
 				self.show_conn_modal = false;
 				self.edit_conn = ConnConf::default();
 				widget::focus_next()
 			}
 			Message::SubmitConnForm => match conn_conf::insert_or_update(&self.edit_conn) {
-				Ok(_) => {
-					self.show_conn_modal = false;
-					self.edit_conn = ConnConf::default();
-					widget::focus_next()
-				}
+				Ok(_) => match conn_conf::list_all() {
+					Ok(conns) => {
+						self.all_conns = conns;
+						self.show_conn_modal = false;
+						self.edit_conn = ConnConf::default();
+						widget::focus_next()
+					}
+					Err(e) => {
+						self.display_err(&e);
+						Command::none()
+					}
+				},
 				Err(e) => {
-					self.toasts.push(Toast {
-						title: "Error".into(),
-						body: e.to_string(),
-						status: toast::Status::Danger,
-					});
+					self.display_err(&e);
 					Command::none()
 				}
 			},
@@ -129,6 +139,7 @@ impl Application for App {
 				self.toasts.remove(index);
 				Command::none()
 			}
+			Message::IcedEvent(e) => event_handler::handle(e),
 			_ => Command::none(),
 		}
 	}
@@ -141,5 +152,15 @@ impl Application for App {
 			.width(Length::Fill);
 
 		toast::Manager::new(user_view, &self.toasts, Message::CloseToast).timeout(2).into()
+	}
+}
+
+impl App {
+	pub fn display_err(&mut self, e: &IError) {
+		self.toasts.push(Toast {
+			title: "Error".into(),
+			body: e.to_string(),
+			status: toast::Status::Danger,
+		});
 	}
 }
