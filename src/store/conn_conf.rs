@@ -75,7 +75,7 @@ pub fn delete(uuid: &String) -> IResult<()> {
 pub fn query_by_uuid(uuid: &String) -> IResult<ConnConf> {
 	let conn = get_conn();
 	Ok(conn.query_row(
-		"SELECT uuid, type, url, username, password FROM t_conn_conf where uuid = ?1 ",
+		"SELECT uuid, name, type, url, username, password FROM t_conn_conf where uuid = ?1 ",
 		[uuid],
 		|row| {
 			Ok(ConnConf {

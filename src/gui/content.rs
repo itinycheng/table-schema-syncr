@@ -1,31 +1,55 @@
 use iced::{
 	alignment::Vertical,
 	theme,
-	widget::{button, column, container, pick_list, row, text, text_input, Column, Container},
+	widget::{
+		button, column, container, pick_list, row, scrollable, text, text_input, Column, Container,
+		Row,
+	},
 	Length, Renderer,
 };
 
 use super::{style::border_style, App, Message};
 use crate::{database::DbType, gui::modal::Modal};
 
-pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
-	let mut content = container(Column::new().push(text("content")))
+pub fn view(app: &App) -> Container<Message, Renderer> {
+	let databases = scrollable(show_databases(&app.databases))
+		.horizontal_scroll(scrollable::Properties::default());
+	let content = Column::new().push(databases);
+	let mut content_wrapper = container(scrollable(content))
 		.width(Length::FillPortion(4))
 		.height(Length::Fill)
+		.padding(5)
 		.style(border_style());
 
 	if app.show_conn_modal {
-		content =
-			container(Modal::new(content, connection_form(app)).on_blur(Message::CloseConnForm))
-				.width(Length::FillPortion(4))
-				.height(Length::Fill)
-				.style(border_style())
+		content_wrapper = container(
+			Modal::new(content_wrapper, edit_conn_form(app)).on_blur(Message::CloseConnForm),
+		)
+		.width(Length::FillPortion(4))
+		.height(Length::Fill)
+		.style(border_style())
 	}
 
-	content
+	content_wrapper
 }
 
-fn connection_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
+fn show_databases(databases: &Vec<String>) -> Row<'_, Message, Renderer> {
+	databases
+		.iter()
+		.fold(Row::new(), |base, database| {
+			base.push(
+				button(text(database))
+					.height(30.0)
+					.style(theme::Button::Secondary)
+					.on_press(Message::SelectedDatabase(database.clone())),
+			)
+		})
+		.height(Length::Fixed(50.0))
+		.padding(5)
+		.spacing(5)
+}
+
+fn edit_conn_form<'a>(app: &App) -> Container<'a, Message, Renderer> {
 	container(
 		column![
 			text("New Connection").size(20),

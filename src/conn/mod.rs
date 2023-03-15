@@ -12,6 +12,7 @@ use std::{
 use crate::{
 	database::DbType,
 	error::{IError, IResult},
+	store::conn_conf::ConnConf,
 };
 
 pub use ::clickhouse::Row as ClickHouseRow;
@@ -56,6 +57,17 @@ impl DBClient {
 		let read_lock = DB_CLIENTS.read().unwrap();
 		read_lock.get(t.borrow()).map(|pool| pool.clone())
 	}
+
+	pub fn databases(&self) -> IResult<Vec<String>> {
+		match self {
+			DBClient::ClickHouse(_) => {
+				DBQuery::<{ DbType::DB_CLICK_HOUSE }, String>::query_list(self, "show databases")
+			}
+			DBClient::Mysql(_) => {
+				DBQuery::<{ DbType::DB_MYSQL }, String>::query_list(self, "show databases")
+			}
+		}
+	}
 }
 
 pub trait DBQuery<const DB: u8, T> {
@@ -85,5 +97,21 @@ impl Hash for DBParam {
 impl Borrow<String> for DBParam {
 	fn borrow(&self) -> &String {
 		&self.uuid
+	}
+}
+
+impl TryFrom<ConnConf> for DBParam {
+	type Error = IError;
+	fn try_from(value: ConnConf) -> Result<Self, Self::Error> {
+		Ok(DBParam {
+			uuid: value.uuid,
+			db_type: value
+				.db_type
+				.ok_or(IError::PromptError("db type can't be None".to_string()))?,
+			url: value.url,
+			user: value.username,
+			password: value.password,
+			..Default::default()
+		})
 	}
 }

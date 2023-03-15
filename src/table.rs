@@ -23,13 +23,16 @@ mod tests {
 			reference: Option<Vec<&'a String>>,
 		}
 
-		let mut self_ref = SelfRef { value: vec!["value".to_string()], reference: None };
+		let mut self_ref =
+			SelfRef { value: vec!["value0".to_string(), "value1".to_string()], reference: None };
 		self_ref.reference = Some(vec![self_ref.value.get(0).unwrap()]);
+		self_ref.value.remove(0);
 
-		println!(
-			"{:p}, {:p}",
-			self_ref.value.get(0).unwrap(),
-			*self_ref.reference.unwrap().get(0).unwrap()
-		)
+		// println!(
+		// 	"{:p}, {:p}",
+		// 	self_ref.value.get(0).unwrap(),
+		// 	*self_ref.reference.unwrap().get(0).unwrap()
+		// );
+		println!("end");
 	}
 }

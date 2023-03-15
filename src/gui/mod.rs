@@ -4,8 +4,9 @@ use iced::{
 };
 
 use crate::{
+	conn::DBClient,
 	database::DbType,
-	error::IError,
+	error::{IError, IResult},
 	store::conn_conf::{self, ConnConf},
 };
 
@@ -25,6 +26,10 @@ pub struct App {
 	pub edit_conn: ConnConf,
 	pub all_conns: Vec<ConnConf>,
 	pub selected_conn: Option<String>,
+	pub databases: Vec<String>,
+	pub selected_db: Option<String>,
+	pub tables: Vec<String>,
+	pub selected_table: Option<String>,
 	pub toasts: Vec<Toast>,
 }
 
@@ -33,6 +38,9 @@ pub enum Message {
 	EditConnection(Option<usize>),
 	DeleteConnection(usize),
 	SelectedConnection(String),
+	ShowDatabases(Option<Vec<String>>),
+	SelectedDatabase(String),
+	ShowTables(Option<Vec<String>>),
 	SubmitConnForm,
 	CloseConnForm,
 	EditConnName(String),
@@ -89,7 +97,21 @@ impl Application for App {
 				Command::none()
 			}
 			Message::SelectedConnection(uuid) => {
-				self.selected_conn = Some(uuid);
+				self.selected_conn = Some(uuid.clone());
+				Command::perform(
+					async move {
+						let conf = conn_conf::query_by_uuid(&uuid).ok()?;
+						let db_client = DBClient::get_or_init(conf.try_into().ok()?).ok()?;
+						let databases = db_client.databases().ok()?;
+						Some(databases)
+					},
+					Message::ShowDatabases,
+				)
+			}
+			Message::ShowDatabases(dbs_option) => {
+				if let Some(dbs) = dbs_option {
+					self.databases = dbs;
+				}
 				Command::none()
 			}
 			Message::CloseConnForm => {
@@ -97,8 +119,13 @@ impl Application for App {
 				self.edit_conn = ConnConf::default();
 				widget::focus_next()
 			}
-			Message::SubmitConnForm => match conn_conf::insert_or_update(&self.edit_conn) {
-				Ok(_) => match conn_conf::list_all() {
+			Message::SubmitConnForm => {
+				fn modify_and_fetch_all(edit_conn: &ConnConf) -> IResult<Vec<ConnConf>> {
+					conn_conf::insert_or_update(edit_conn)?;
+					conn_conf::list_all()
+				}
+
+				match modify_and_fetch_all(&self.edit_conn) {
 					Ok(conns) => {
 						self.all_conns = conns;
 						self.show_conn_modal = false;
@@ -109,12 +136,8 @@ impl Application for App {
 						self.display_err(&e);
 						Command::none()
 					}
-				},
-				Err(e) => {
-					self.display_err(&e);
-					Command::none()
 				}
-			},
+			}
 			Message::EditConnName(name) => {
 				self.edit_conn.name = name;
 				Command::none()

@@ -1,9 +1,8 @@
-
-use iced_native::alignment::Alignment;
-use iced_native::widget::{self, Tree};
 use iced_native::{
-	event, layout, mouse, overlay, renderer, Clipboard, Color, Element,
-	Event, Layout, Length, Point, Rectangle, Shell, Size, Widget,
+	alignment::Alignment,
+	event, layout, mouse, overlay, renderer,
+	widget::{self, Tree},
+	Clipboard, Color, Element, Event, Layout, Length, Point, Rectangle, Shell, Size, Widget,
 };
 
 /// A widget that centers a modal element over some base element
@@ -19,25 +18,17 @@ impl<'a, Message, Renderer> Modal<'a, Message, Renderer> {
 		base: impl Into<Element<'a, Message, Renderer>>,
 		modal: impl Into<Element<'a, Message, Renderer>>,
 	) -> Self {
-		Self {
-			base: base.into(),
-			modal: modal.into(),
-			on_blur: None,
-		}
+		Self { base: base.into(), modal: modal.into(), on_blur: None }
 	}
 
 	/// Sets the message that will be produces when the background
 	/// of the [`Modal`] is pressed
 	pub fn on_blur(self, on_blur: Message) -> Self {
-		Self {
-			on_blur: Some(on_blur),
-			..self
-		}
+		Self { on_blur: Some(on_blur), ..self }
 	}
 }
 
-impl<'a, Message, Renderer> Widget<Message, Renderer>
-	for Modal<'a, Message, Renderer>
+impl<'a, Message, Renderer> Widget<Message, Renderer> for Modal<'a, Message, Renderer>
 where
 	Renderer: iced_native::Renderer,
 	Message: Clone,
@@ -58,11 +49,7 @@ where
 		self.base.as_widget().height()
 	}
 
-	fn layout(
-		&self,
-		renderer: &Renderer,
-		limits: &layout::Limits,
-	) -> layout::Node {
+	fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
 		self.base.as_widget().layout(renderer, limits)
 	}
 
@@ -149,12 +136,7 @@ where
 		renderer: &Renderer,
 		operation: &mut dyn widget::Operation<Message>,
 	) {
-		self.base.as_widget().operate(
-			&mut state.children[0],
-			layout,
-			renderer,
-			operation,
-		);
+		self.base.as_widget().operate(&mut state.children[0], layout, renderer, operation);
 	}
 }
 
@@ -171,15 +153,9 @@ where
 	Renderer: iced_native::Renderer,
 	Message: Clone,
 {
-	fn layout(
-		&self,
-		renderer: &Renderer,
-		_bounds: Size,
-		position: Point,
-	) -> layout::Node {
-		let limits = layout::Limits::new(Size::ZERO, self.size)
-			.width(Length::Fill)
-			.height(Length::Fill);
+	fn layout(&self, renderer: &Renderer, _bounds: Size, position: Point) -> layout::Node {
+		let limits =
+			layout::Limits::new(Size::ZERO, self.size).width(Length::Fill).height(Length::Fill);
 
 		let mut child = self.content.as_widget().layout(renderer, &limits);
 		child.align(Alignment::Center, Alignment::Center, limits.max());
@@ -202,10 +178,7 @@ where
 		let content_bounds = layout.children().next().unwrap().bounds();
 
 		if let Some(message) = self.on_blur.as_ref() {
-			if let Event::Mouse(mouse::Event::ButtonPressed(
-				mouse::Button::Left,
-			)) = &event
-			{
+			if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) = &event {
 				if !content_bounds.contains(cursor_position) {
 					shell.publish(message.clone());
 					return event::Status::Captured;
@@ -239,10 +212,7 @@ where
 				border_width: 0.0,
 				border_color: Color::TRANSPARENT,
 			},
-			Color {
-				a: 0.80,
-				..Color::BLACK
-			},
+			Color { a: 0.80, ..Color::BLACK },
 		);
 
 		self.content.as_widget().draw(
@@ -291,16 +261,11 @@ where
 		layout: Layout<'_>,
 		renderer: &Renderer,
 	) -> Option<overlay::Element<'c, Message, Renderer>> {
-		self.content.as_widget_mut().overlay(
-			self.tree,
-			layout.children().next().unwrap(),
-			renderer,
-		)
+		self.content.as_widget_mut().overlay(self.tree, layout.children().next().unwrap(), renderer)
 	}
 }
 
-impl<'a, Message, Renderer> From<Modal<'a, Message, Renderer>>
-	for Element<'a, Message, Renderer>
+impl<'a, Message, Renderer> From<Modal<'a, Message, Renderer>> for Element<'a, Message, Renderer>
 where
 	Renderer: 'a + iced_native::Renderer,
 	Message: 'a + Clone,

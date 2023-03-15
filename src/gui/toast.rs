@@ -1,18 +1,18 @@
-
-use std::fmt;
-use std::time::{Duration, Instant};
-
-use iced::theme;
-use iced::widget::{
-	button, column, container, horizontal_rule, horizontal_space, row, text,
+use std::{
+	fmt,
+	time::{Duration, Instant},
 };
+
 use iced::{
-	Alignment, Element, Length, Point, Rectangle, Renderer, Size, Theme,
-	Vector,
+	theme,
+	widget::{button, column, container, horizontal_rule, horizontal_space, row, text},
+	Alignment, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector,
 };
-use iced_native::widget::{tree, Operation, Tree};
-use iced_native::{event, layout, mouse, overlay, renderer, window};
-use iced_native::{Clipboard, Event, Layout, Shell, Widget};
+use iced_native::{
+	event, layout, mouse, overlay, renderer,
+	widget::{tree, Operation, Tree},
+	window, Clipboard, Event, Layout, Shell, Widget,
+};
 
 pub const DEFAULT_TIMEOUT: u64 = 5;
 
@@ -26,8 +26,7 @@ pub enum Status {
 }
 
 impl Status {
-	pub const ALL: &[Self] =
-		&[Self::Primary, Self::Secondary, Self::Success, Self::Danger];
+	pub const ALL: &[Self] = &[Self::Primary, Self::Secondary, Self::Success, Self::Danger];
 }
 
 impl container::StyleSheet for Status {
@@ -95,17 +94,13 @@ where
 						row![
 							text(toast.title.as_str()),
 							horizontal_space(Length::Fill),
-							button("X")
-								.on_press((on_close)(index))
-								.padding(3),
+							button("X").on_press((on_close)(index)).padding(3),
 						]
 						.align_items(Alignment::Center)
 					)
 					.width(Length::Fill)
 					.padding(5)
-					.style(
-						theme::Container::Custom(Box::new(toast.status))
-					),
+					.style(theme::Container::Custom(Box::new(toast.status))),
 					horizontal_rule(1),
 					container(text(toast.body.as_str()))
 						.width(Length::Fill)
@@ -126,10 +121,7 @@ where
 	}
 
 	pub fn timeout(self, seconds: u64) -> Self {
-		Self {
-			timeout_secs: seconds,
-			..self
-		}
+		Self { timeout_secs: seconds, ..self }
 	}
 }
 
@@ -142,11 +134,7 @@ impl<'a, Message> Widget<Message, Renderer> for Manager<'a, Message> {
 		self.content.as_widget().height()
 	}
 
-	fn layout(
-		&self,
-		renderer: &Renderer,
-		limits: &layout::Limits,
-	) -> layout::Node {
+	fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
 		self.content.as_widget().layout(renderer, limits)
 	}
 
@@ -160,9 +148,7 @@ impl<'a, Message> Widget<Message, Renderer> for Manager<'a, Message> {
 	}
 
 	fn children(&self) -> Vec<Tree> {
-		std::iter::once(Tree::new(&self.content))
-			.chain(self.toasts.iter().map(Tree::new))
-			.collect()
+		std::iter::once(Tree::new(&self.content)).chain(self.toasts.iter().map(Tree::new)).collect()
 	}
 
 	fn diff(&self, tree: &mut Tree) {
@@ -178,17 +164,13 @@ impl<'a, Message> Widget<Message, Renderer> for Manager<'a, Message> {
 				instants.truncate(new);
 			}
 			(old, new) if old < new => {
-				instants.extend(
-					std::iter::repeat(Some(Instant::now())).take(new - old),
-				);
+				instants.extend(std::iter::repeat(Some(Instant::now())).take(new - old));
 			}
 			_ => {}
 		}
 
 		tree.diff_children(
-			&std::iter::once(&self.content)
-				.chain(self.toasts.iter())
-				.collect::<Vec<_>>(),
+			&std::iter::once(&self.content).chain(self.toasts.iter()).collect::<Vec<_>>(),
 		);
 	}
 
@@ -200,12 +182,7 @@ impl<'a, Message> Widget<Message, Renderer> for Manager<'a, Message> {
 		operation: &mut dyn Operation<Message>,
 	) {
 		operation.container(None, &mut |operation| {
-			self.content.as_widget().operate(
-				&mut state.children[0],
-				layout,
-				renderer,
-				operation,
-			);
+			self.content.as_widget().operate(&mut state.children[0], layout, renderer, operation);
 		});
 	}
 
@@ -278,11 +255,7 @@ impl<'a, Message> Widget<Message, Renderer> for Manager<'a, Message> {
 
 		let (content_state, toasts_state) = state.children.split_at_mut(1);
 
-		let content = self.content.as_widget_mut().overlay(
-			&mut content_state[0],
-			layout,
-			renderer,
-		);
+		let content = self.content.as_widget_mut().overlay(&mut content_state[0], layout, renderer);
 
 		let toasts = (!self.toasts.is_empty()).then(|| {
 			overlay::Element::new(
@@ -296,11 +269,9 @@ impl<'a, Message> Widget<Message, Renderer> for Manager<'a, Message> {
 				}),
 			)
 		});
-		let overlays =
-			content.into_iter().chain(toasts).collect::<Vec<_>>();
+		let overlays = content.into_iter().chain(toasts).collect::<Vec<_>>();
 
-		(!overlays.is_empty())
-			.then(|| overlay::Group::with_children(overlays).overlay())
+		(!overlays.is_empty()).then(|| overlay::Group::with_children(overlays).overlay())
 	}
 }
 
@@ -312,18 +283,10 @@ struct Overlay<'a, 'b, Message> {
 	timeout_secs: u64,
 }
 
-impl<'a, 'b, Message> overlay::Overlay<Message, Renderer>
-	for Overlay<'a, 'b, Message>
-{
-	fn layout(
-		&self,
-		renderer: &Renderer,
-		bounds: Size,
-		position: Point,
-	) -> layout::Node {
-		let limits = layout::Limits::new(Size::ZERO, bounds)
-			.width(Length::Fill)
-			.height(Length::Fill);
+impl<'a, 'b, Message> overlay::Overlay<Message, Renderer> for Overlay<'a, 'b, Message> {
+	fn layout(&self, renderer: &Renderer, bounds: Size, position: Point) -> layout::Node {
+		let limits =
+			layout::Limits::new(Size::ZERO, bounds).width(Length::Fill).height(Length::Fill);
 
 		layout::flex::resolve(
 			layout::flex::Axis::Vertical,
@@ -349,28 +312,22 @@ impl<'a, 'b, Message> overlay::Overlay<Message, Renderer>
 		if let Event::Window(window::Event::RedrawRequested(now)) = &event {
 			let mut next_redraw: Option<window::RedrawRequest> = None;
 
-			self.instants.iter_mut().enumerate().for_each(
-				|(index, maybe_instant)| {
-					if let Some(instant) = maybe_instant.as_mut() {
-						let remaining =
-							Duration::from_secs(self.timeout_secs)
-								.saturating_sub(instant.elapsed());
+			self.instants.iter_mut().enumerate().for_each(|(index, maybe_instant)| {
+				if let Some(instant) = maybe_instant.as_mut() {
+					let remaining =
+						Duration::from_secs(self.timeout_secs).saturating_sub(instant.elapsed());
 
-						if remaining == Duration::ZERO {
-							maybe_instant.take();
-							shell.publish((self.on_close)(index));
-							next_redraw =
-								Some(window::RedrawRequest::NextFrame);
-						} else {
-							let redraw_at =
-								window::RedrawRequest::At(*now + remaining);
-							next_redraw = next_redraw
-								.map(|redraw| redraw.min(redraw_at))
-								.or(Some(redraw_at));
-						}
+					if remaining == Duration::ZERO {
+						maybe_instant.take();
+						shell.publish((self.on_close)(index));
+						next_redraw = Some(window::RedrawRequest::NextFrame);
+					} else {
+						let redraw_at = window::RedrawRequest::At(*now + remaining);
+						next_redraw =
+							next_redraw.map(|redraw| redraw.min(redraw_at)).or(Some(redraw_at));
 					}
-				},
-			);
+				}
+			});
 
 			if let Some(redraw) = next_redraw {
 				shell.request_redraw(redraw);
@@ -417,11 +374,8 @@ impl<'a, 'b, Message> overlay::Overlay<Message, Renderer>
 	) {
 		let viewport = layout.bounds();
 
-		for ((child, state), layout) in self
-			.toasts
-			.iter()
-			.zip(self.state.iter())
-			.zip(layout.children())
+		for ((child, state), layout) in
+			self.toasts.iter().zip(self.state.iter()).zip(layout.children())
 		{
 			child.as_widget().draw(
 				state,
@@ -442,15 +396,11 @@ impl<'a, 'b, Message> overlay::Overlay<Message, Renderer>
 		operation: &mut dyn iced_native::widget::Operation<Message>,
 	) {
 		operation.container(None, &mut |operation| {
-			self.toasts
-				.iter()
-				.zip(self.state.iter_mut())
-				.zip(layout.children())
-				.for_each(|((child, state), layout)| {
-					child
-						.as_widget()
-						.operate(state, layout, renderer, operation);
-				})
+			self.toasts.iter().zip(self.state.iter_mut()).zip(layout.children()).for_each(
+				|((child, state), layout)| {
+					child.as_widget().operate(state, layout, renderer, operation);
+				},
+			)
 		});
 	}
 
@@ -478,15 +428,8 @@ impl<'a, 'b, Message> overlay::Overlay<Message, Renderer>
 			.unwrap_or_default()
 	}
 
-	fn is_over(
-		&self,
-		layout: Layout<'_>,
-		_renderer: &Renderer,
-		cursor_position: Point,
-	) -> bool {
-		layout
-			.children()
-			.any(|layout| layout.bounds().contains(cursor_position))
+	fn is_over(&self, layout: Layout<'_>, _renderer: &Renderer, cursor_position: Point) -> bool {
+		layout.children().any(|layout| layout.bounds().contains(cursor_position))
 	}
 }
 
