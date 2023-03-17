@@ -7,7 +7,7 @@ use iced::{
 use crate::gui::style::icon::{delete_icon, edit_icon};
 
 use super::{
-	style::{border_style, sidebar_item_style},
+	style::{border_style, button_style},
 	App, Message,
 };
 
@@ -22,7 +22,7 @@ pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 					row![
 						button(text(&col.1.name).size(20))
 							.width(Length::Fill)
-							.style(sidebar_item_style(
+							.style(button_style(
 								matches!(&app.selected_conn, Some(uuid) if uuid == &col.1.uuid)
 							))
 							.on_press(Message::SelectedConnection(col.1.uuid.clone())),

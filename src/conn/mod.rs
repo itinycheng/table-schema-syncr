@@ -68,6 +68,22 @@ impl DBClient {
 			}
 		}
 	}
+
+	pub fn tables(&self, database: &String) -> IResult<Vec<String>> {
+		match self {
+			DBClient::ClickHouse(_) => DBQuery::<{ DbType::DB_CLICK_HOUSE }, String>::query_list(
+				self,
+				format!("show tables in {}", database),
+			),
+			DBClient::Mysql(_) => DBQuery::<{ DbType::DB_MYSQL }, String>::query_list(
+				self,
+				format!(
+					"SELECT table_name FROM information_schema.tables WHERE table_schema = '{}'",
+					database
+				),
+			),
+		}
+	}
 }
 
 pub trait DBQuery<const DB: u8, T> {

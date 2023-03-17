@@ -21,7 +21,7 @@ pub fn border_style() -> theme::Container {
 	Container::Custom(Box::new(Style))
 }
 
-pub fn sidebar_item_style(active: bool) -> theme::Button {
+pub fn button_style(active: bool) -> theme::Button {
 	if active {
 		theme::Button::Primary
 	} else {

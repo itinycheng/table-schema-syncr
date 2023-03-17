@@ -8,13 +8,19 @@ use iced::{
 	Length, Renderer,
 };
 
-use super::{style::border_style, App, Message};
+use super::{
+	style::{border_style, button_style},
+	App, Message,
+};
 use crate::{database::DbType, gui::modal::Modal};
 
 pub fn view(app: &App) -> Container<Message, Renderer> {
-	let databases = scrollable(show_databases(&app.databases))
-		.horizontal_scroll(scrollable::Properties::default());
-	let content = Column::new().push(databases);
+	let databases = scrollable(show_databases(app))
+		.horizontal_scroll(scrollable::Properties::new().width(1.0).scroller_width(2.0));
+	let tables = scrollable(show_tables(app))
+		.horizontal_scroll(scrollable::Properties::new().width(1.0).scroller_width(2.0));
+
+	let content = Column::new().push(databases).push(tables).push("content..");
 	let mut content_wrapper = container(scrollable(content))
 		.width(Length::FillPortion(4))
 		.height(Length::Fill)
@@ -33,20 +39,44 @@ pub fn view(app: &App) -> Container<Message, Renderer> {
 	content_wrapper
 }
 
-fn show_databases(databases: &Vec<String>) -> Row<'_, Message, Renderer> {
-	databases
-		.iter()
-		.fold(Row::new(), |base, database| {
+fn show_tables(app: &App) -> Row<'_, Message, Renderer> {
+	if app.tables.is_empty() {
+		Row::new().push("nothing")
+	} else {
+		app.tables.iter().fold(Row::new(), |base, table| {
+			base.push(
+				button(text(table))
+					.height(30.0)
+					.style(button_style(
+						matches!(&app.selected_table, Some(selected) if selected == table),
+					))
+					.on_press(Message::SelectedTable(table.clone())),
+			)
+		})
+	}
+	.height(Length::Fixed(40.0))
+	.padding(5)
+	.spacing(5)
+}
+
+fn show_databases(app: &App) -> Row<'_, Message, Renderer> {
+	if app.databases.is_empty() {
+		Row::new().push("nothing")
+	} else {
+		app.databases.iter().fold(Row::new(), |base, database| {
 			base.push(
 				button(text(database))
 					.height(30.0)
-					.style(theme::Button::Secondary)
+					.style(button_style(
+						matches!(&app.selected_db, Some(selected) if selected == database),
+					))
 					.on_press(Message::SelectedDatabase(database.clone())),
 			)
 		})
-		.height(Length::Fixed(50.0))
-		.padding(5)
-		.spacing(5)
+	}
+	.height(Length::Fixed(40.0))
+	.padding(5)
+	.spacing(5)
 }
 
 fn edit_conn_form<'a>(app: &App) -> Container<'a, Message, Renderer> {

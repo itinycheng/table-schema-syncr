@@ -41,6 +41,7 @@ pub enum Message {
 	ShowDatabases(Option<Vec<String>>),
 	SelectedDatabase(String),
 	ShowTables(Option<Vec<String>>),
+	SelectedTable(String),
 	SubmitConnForm,
 	CloseConnForm,
 	EditConnName(String),
@@ -98,6 +99,10 @@ impl Application for App {
 			}
 			Message::SelectedConnection(uuid) => {
 				self.selected_conn = Some(uuid.clone());
+				self.selected_db = None;
+				self.selected_table = None;
+				self.tables = vec![];
+				self.databases = vec![];
 				Command::perform(
 					async move {
 						let conf = conn_conf::query_by_uuid(&uuid).ok()?;
@@ -108,10 +113,39 @@ impl Application for App {
 					Message::ShowDatabases,
 				)
 			}
-			Message::ShowDatabases(dbs_option) => {
-				if let Some(dbs) = dbs_option {
-					self.databases = dbs;
+			Message::ShowDatabases(databases) => {
+				if let Some(databases) = databases {
+					self.databases = databases;
+				} else {
+					self.databases = vec![]
 				}
+				Command::none()
+			}
+			Message::SelectedDatabase(database) => {
+				self.selected_db = Some(database.clone());
+				self.selected_table = None;
+				self.tables = vec![];
+				let uuid = self.selected_conn.clone().unwrap();
+				Command::perform(
+					async move {
+						let conf = conn_conf::query_by_uuid(&uuid).ok()?;
+						let db_client = DBClient::get_or_init(conf.try_into().ok()?).ok()?;
+						let tables = db_client.tables(&database).ok()?;
+						Some(tables)
+					},
+					Message::ShowTables,
+				)
+			}
+			Message::ShowTables(tables) => {
+				if let Some(tables) = tables {
+					self.tables = tables;
+				} else {
+					self.tables = vec![]
+				}
+				Command::none()
+			}
+			Message::SelectedTable(table) => {
+				self.selected_table = Some(table);
 				Command::none()
 			}
 			Message::CloseConnForm => {

@@ -26,7 +26,7 @@ pub enum Status {
 }
 
 impl Status {
-	pub const ALL: &[Self] = &[Self::Primary, Self::Secondary, Self::Success, Self::Danger];
+	pub const ALL: &'static [Self] = &[Self::Primary, Self::Secondary, Self::Success, Self::Danger];
 }
 
 impl container::StyleSheet for Status {
