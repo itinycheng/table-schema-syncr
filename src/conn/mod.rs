@@ -84,6 +84,21 @@ impl DBClient {
 			),
 		}
 	}
+
+	pub fn table_schema(&self, database: &String, table: &String) -> IResult<String> {
+		match self {
+			DBClient::ClickHouse(_) => DBQuery::<{ DbType::DB_CLICK_HOUSE }, String>::query_one(
+				self,
+				format!("show create table {}.{}", database, table),
+			)
+			.map(|schema| schema.unwrap_or("".to_owned())),
+			DBClient::Mysql(_) => DBQuery::<{ DbType::DB_MYSQL }, (String, String)>::query_one(
+				self,
+				format!("show create table {}.{}", database, table),
+			)
+			.map(|schema| schema.map(|tpl| tpl.1).unwrap_or("".to_owned())),
+		}
+	}
 }
 
 pub trait DBQuery<const DB: u8, T> {

@@ -30,6 +30,8 @@ pub struct App {
 	pub selected_db: Option<String>,
 	pub tables: Vec<String>,
 	pub selected_table: Option<String>,
+	pub selected_db_type: Option<DbType>,
+	pub origin_table_schema: Option<String>,
 	pub toasts: Vec<Toast>,
 }
 
@@ -42,6 +44,8 @@ pub enum Message {
 	SelectedDatabase(String),
 	ShowTables(Option<Vec<String>>),
 	SelectedTable(String),
+	SelectedDBType(DbType),
+	ShowTableSchema(Option<String>),
 	SubmitConnForm,
 	CloseConnForm,
 	EditConnName(String),
@@ -65,7 +69,7 @@ impl Application for App {
 	}
 
 	fn title(&self) -> String {
-		String::from("Table Syncr - Iced")
+		String::from("Table Sync - Iced")
 	}
 
 	fn subscription(&self) -> Subscription<Self::Message> {
@@ -98,11 +102,7 @@ impl Application for App {
 				Command::none()
 			}
 			Message::SelectedConnection(uuid) => {
-				self.selected_conn = Some(uuid.clone());
-				self.selected_db = None;
-				self.selected_table = None;
-				self.tables = vec![];
-				self.databases = vec![];
+				self.reset_connection(&uuid);
 				Command::perform(
 					async move {
 						let conf = conn_conf::query_by_uuid(&uuid).ok()?;
@@ -122,9 +122,7 @@ impl Application for App {
 				Command::none()
 			}
 			Message::SelectedDatabase(database) => {
-				self.selected_db = Some(database.clone());
-				self.selected_table = None;
-				self.tables = vec![];
+				self.reset_database(&database);
 				let uuid = self.selected_conn.clone().unwrap();
 				Command::perform(
 					async move {
@@ -146,6 +144,26 @@ impl Application for App {
 			}
 			Message::SelectedTable(table) => {
 				self.selected_table = Some(table);
+				self.selected_db_type = None;
+				Command::none()
+			}
+			Message::SelectedDBType(db_type) => {
+				self.selected_db_type = Some(db_type);
+				let conn_uuid = self.selected_conn.clone().unwrap();
+				let database = self.selected_db.clone().unwrap();
+				let table = self.selected_table.clone().unwrap();
+				Command::perform(
+					async move {
+						let conf = conn_conf::query_by_uuid(&conn_uuid).ok()?;
+						let db_client = DBClient::get_or_init(conf.try_into().ok()?).ok()?;
+						let schema = db_client.table_schema(&database, &table).ok()?;
+						Some(schema)
+					},
+					Message::ShowTableSchema,
+				)
+			}
+			Message::ShowTableSchema(schema) => {
+				self.origin_table_schema = schema;
 				Command::none()
 			}
 			Message::CloseConnForm => {
@@ -213,6 +231,24 @@ impl Application for App {
 }
 
 impl App {
+	pub fn reset_connection(&mut self, conn_uuid: &String) {
+		self.selected_conn = Some(conn_uuid.clone());
+		self.selected_db = None;
+		self.selected_table = None;
+		self.selected_db_type = None;
+		self.tables = vec![];
+		self.databases = vec![];
+		self.origin_table_schema = None
+	}
+
+	pub fn reset_database(&mut self, database: &String) {
+		self.selected_db = Some(database.clone());
+		self.selected_table = None;
+		self.selected_db_type = None;
+		self.tables = vec![];
+		self.origin_table_schema = None;
+	}
+
 	pub fn display_err(&mut self, e: &IError) {
 		self.toasts.push(Toast {
 			title: "Error".into(),

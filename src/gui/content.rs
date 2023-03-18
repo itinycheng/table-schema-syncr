@@ -19,8 +19,12 @@ pub fn view(app: &App) -> Container<Message, Renderer> {
 		.horizontal_scroll(scrollable::Properties::new().width(1.0).scroller_width(2.0));
 	let tables = scrollable(show_tables(app))
 		.horizontal_scroll(scrollable::Properties::new().width(1.0).scroller_width(2.0));
+	let content = Column::new()
+		.push(databases)
+		.push(tables)
+		.push(show_db_types(app))
+		.push(show_table_schema(app));
 
-	let content = Column::new().push(databases).push(tables).push("content..");
 	let mut content_wrapper = container(scrollable(content))
 		.width(Length::FillPortion(4))
 		.height(Length::Fill)
@@ -39,9 +43,40 @@ pub fn view(app: &App) -> Container<Message, Renderer> {
 	content_wrapper
 }
 
+fn show_table_schema(app: &App) -> Row<'_, Message, Renderer> {
+	if app.origin_table_schema.is_none() {
+		Row::new()
+	} else {
+		Row::new().push(text(app.origin_table_schema.as_ref().unwrap()))
+	}
+	.width(Length::Fill)
+	.padding(5)
+	.spacing(5)
+}
+
+fn show_db_types(app: &App) -> Row<'_, Message, Renderer> {
+	if app.selected_table.is_none() {
+		Row::new()
+	} else {
+		DbType::ALL.iter().fold(Row::new(), |base, db_type| {
+			base.push(
+				button(text(db_type))
+					.height(30.0)
+					.style(button_style(
+						matches!(&app.selected_db_type, Some(selected) if selected == db_type),
+					))
+					.on_press(Message::SelectedDBType(db_type.clone())),
+			)
+		})
+	}
+	.height(40.0)
+	.padding(5)
+	.spacing(5)
+}
+
 fn show_tables(app: &App) -> Row<'_, Message, Renderer> {
 	if app.tables.is_empty() {
-		Row::new().push("nothing")
+		Row::new()
 	} else {
 		app.tables.iter().fold(Row::new(), |base, table| {
 			base.push(
