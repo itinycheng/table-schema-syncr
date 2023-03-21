@@ -1,8 +1,8 @@
 use mysql::{prelude::Queryable, Opts, Pool};
 
 use crate::{
-	database::DbType,
 	error::{IError, IResult},
+	mapping::database::DbType,
 };
 
 use super::{DBClient, DBParam, DBQuery, MysqlRow};

@@ -10,8 +10,8 @@ use std::{
 };
 
 use crate::{
-	database::DbType,
 	error::{IError, IResult},
+	mapping::database::DbType,
 	store::conn_conf::ConnConf,
 };
 
@@ -107,7 +107,7 @@ pub trait DBQuery<const DB: u8, T> {
 	fn query_one<I: AsRef<str>>(&self, sql: I) -> IResult<Option<T>>;
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone)]
+#[derive(PartialEq, Eq, Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DBParam {
 	pub uuid: String,
 	pub db_type: DbType,

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[repr(u8)]
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Default, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Default, Clone, Copy, Serialize, Deserialize)]
 pub enum DbType {
 	MySQL = 1,
 	ClickHouse = 2,
@@ -18,15 +18,6 @@ impl DbType {
 	pub const DB_CLICK_HOUSE: u8 = DbType::ClickHouse as u8;
 
 	pub const DB_HBASE: u8 = DbType::HBase as u8;
-
-	pub const fn to_enum(value: u8) -> Self {
-		match value {
-			Self::DB_MYSQL => Self::MySQL,
-			Self::DB_CLICK_HOUSE => Self::ClickHouse,
-			Self::DB_HBASE => Self::HBase,
-			_ => panic!("Unknown enum value"),
-		}
-	}
 }
 
 impl std::fmt::Display for DbType {
@@ -38,19 +29,30 @@ impl std::fmt::Display for DbType {
 				DbType::MySQL => "MySQL",
 				DbType::ClickHouse => "ClickHouse",
 				DbType::HBase => "HBase",
-				_ => panic!("Unknown db type"),
+				_ => "Unknown",
 			}
 		)
 	}
 }
 
-impl<T: AsRef<str>> From<T> for DbType {
-	fn from(value: T) -> Self {
+impl From<String> for DbType {
+	fn from(value: String) -> Self {
 		match value.as_ref() {
 			"MySQL" => Self::MySQL,
 			"ClickHouse" => Self::ClickHouse,
 			"HBase" => Self::HBase,
 			_ => Self::Unknown,
+		}
+	}
+}
+
+impl From<u8> for DbType {
+	fn from(value: u8) -> Self {
+		match value {
+			Self::DB_MYSQL => Self::MySQL,
+			Self::DB_CLICK_HOUSE => Self::ClickHouse,
+			Self::DB_HBASE => Self::HBase,
+			_ => panic!("Unknown enum value"),
 		}
 	}
 }

@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{database::DbType, error::IResult};
+use crate::{error::IResult, mapping::database::DbType};
 
 use super::get_conn;
 

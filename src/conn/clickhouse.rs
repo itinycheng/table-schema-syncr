@@ -1,7 +1,7 @@
 use super::{ClickHouseRow, DBClient, DBParam, DBQuery};
 use crate::{
-	database::DbType,
 	error::{IError, IResult},
+	mapping::database::DbType,
 };
 use clickhouse::{Client, Compression};
 use serde::Deserialize;

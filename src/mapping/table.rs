@@ -1,6 +1,4 @@
-use crate::database::DbType;
-
-use super::column::Column;
+use super::{column::Column, database::DbType};
 
 pub struct Table<'a> {
 	pub name: String,

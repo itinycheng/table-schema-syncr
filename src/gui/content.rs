@@ -12,7 +12,7 @@ use super::{
 	style::{border_style, button_style},
 	App, Message,
 };
-use crate::{database::DbType, gui::modal::Modal};
+use crate::{gui::modal::Modal, mapping::database::DbType};
 
 pub fn view(app: &App) -> Container<Message, Renderer> {
 	let databases = scrollable(show_databases(app))

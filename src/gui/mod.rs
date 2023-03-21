@@ -5,8 +5,8 @@ use iced::{
 
 use crate::{
 	conn::DBClient,
-	database::DbType,
 	error::{IError, IResult},
+	mapping::database::DbType,
 	store::conn_conf::{self, ConnConf},
 };
 
@@ -114,11 +114,7 @@ impl Application for App {
 				)
 			}
 			Message::ShowDatabases(databases) => {
-				if let Some(databases) = databases {
-					self.databases = databases;
-				} else {
-					self.databases = vec![]
-				}
+				self.databases = databases.unwrap_or_default();
 				Command::none()
 			}
 			Message::SelectedDatabase(database) => {
@@ -135,20 +131,16 @@ impl Application for App {
 				)
 			}
 			Message::ShowTables(tables) => {
-				if let Some(tables) = tables {
-					self.tables = tables;
-				} else {
-					self.tables = vec![]
-				}
+				self.tables = tables.unwrap_or_default();
 				Command::none()
 			}
 			Message::SelectedTable(table) => {
-				self.selected_table = Some(table);
-				self.selected_db_type = None;
+				self.selected_table.replace(table);
+				self.selected_db_type.take();
 				Command::none()
 			}
 			Message::SelectedDBType(db_type) => {
-				self.selected_db_type = Some(db_type);
+				self.selected_db_type.replace(db_type);
 				let conn_uuid = self.selected_conn.clone().unwrap();
 				let database = self.selected_db.clone().unwrap();
 				let table = self.selected_table.clone().unwrap();
@@ -195,7 +187,7 @@ impl Application for App {
 				Command::none()
 			}
 			Message::EditConnDbType(db_type) => {
-				self.edit_conn.db_type = Some(db_type);
+				self.edit_conn.db_type.replace(db_type);
 				Command::none()
 			}
 			Message::EditConnUrl(url) => {
@@ -232,21 +224,21 @@ impl Application for App {
 
 impl App {
 	pub fn reset_connection(&mut self, conn_uuid: &String) {
-		self.selected_conn = Some(conn_uuid.clone());
-		self.selected_db = None;
-		self.selected_table = None;
-		self.selected_db_type = None;
-		self.tables = vec![];
-		self.databases = vec![];
-		self.origin_table_schema = None
+		self.selected_conn.replace(conn_uuid.clone());
+		self.selected_db.take();
+		self.selected_table.take();
+		self.selected_db_type.take();
+		self.tables.clear();
+		self.databases.clear();
+		self.origin_table_schema.take();
 	}
 
 	pub fn reset_database(&mut self, database: &String) {
-		self.selected_db = Some(database.clone());
-		self.selected_table = None;
-		self.selected_db_type = None;
-		self.tables = vec![];
-		self.origin_table_schema = None;
+		self.selected_db.replace(database.clone());
+		self.selected_table.take();
+		self.selected_db_type.take();
+		self.tables.clear();
+		self.origin_table_schema.take();
 	}
 
 	pub fn display_err(&mut self, e: &IError) {

@@ -1,14 +1,12 @@
 use gui::App;
 use iced::{Application, Settings};
 
-pub mod column;
 pub mod conf;
 pub mod conn;
-pub mod database;
 pub mod error;
 pub mod gui;
+pub mod mapping;
 pub mod store;
-pub mod table;
 pub mod util;
 
 pub fn main() -> error::IResult<()> {
