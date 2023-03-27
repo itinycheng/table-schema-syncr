@@ -6,7 +6,7 @@ use iced::{
 use crate::{
 	conn::DBClient,
 	error::{IError, IResult},
-	mapping::database::DbType,
+	mapping::{column::ColumnSpec, database::DbType},
 	store::conn_conf::{self, ConnConf},
 };
 
@@ -31,7 +31,7 @@ pub struct App {
 	pub tables: Vec<String>,
 	pub selected_table: Option<String>,
 	pub selected_db_type: Option<DbType>,
-	pub origin_table_schema: Option<String>,
+	pub origin_table_schema: Vec<ColumnSpec>,
 	pub toasts: Vec<Toast>,
 }
 
@@ -45,7 +45,7 @@ pub enum Message {
 	ShowTables(Option<Vec<String>>),
 	SelectedTable(String),
 	SelectedDBType(DbType),
-	ShowTableSchema(Option<String>),
+	ShowTableSchema(Option<Vec<ColumnSpec>>),
 	SubmitConnForm,
 	CloseConnForm,
 	EditConnName(String),
@@ -148,14 +148,13 @@ impl Application for App {
 					async move {
 						let conf = conn_conf::query_by_uuid(&conn_uuid).ok()?;
 						let db_client = DBClient::get_or_init(conf.try_into().ok()?).ok()?;
-						let schema = db_client.table_schema(&database, &table).ok()?;
-						Some(schema)
+						Some(db_client.table_schema(&database, &table).ok()?)
 					},
 					Message::ShowTableSchema,
 				)
 			}
 			Message::ShowTableSchema(schema) => {
-				self.origin_table_schema = schema;
+				self.origin_table_schema = schema.unwrap_or_default();
 				Command::none()
 			}
 			Message::CloseConnForm => {
@@ -230,7 +229,7 @@ impl App {
 		self.selected_db_type.take();
 		self.tables.clear();
 		self.databases.clear();
-		self.origin_table_schema.take();
+		self.origin_table_schema.clear();
 	}
 
 	pub fn reset_database(&mut self, database: &String) {
@@ -238,7 +237,7 @@ impl App {
 		self.selected_table.take();
 		self.selected_db_type.take();
 		self.tables.clear();
-		self.origin_table_schema.take();
+		self.origin_table_schema.clear();
 	}
 
 	pub fn display_err(&mut self, e: &IError) {

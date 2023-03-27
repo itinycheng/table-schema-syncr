@@ -44,14 +44,12 @@ pub fn view(app: &App) -> Container<Message, Renderer> {
 }
 
 fn show_table_schema(app: &App) -> Row<'_, Message, Renderer> {
-	if app.origin_table_schema.is_none() {
-		Row::new()
-	} else {
-		Row::new().push(text(app.origin_table_schema.as_ref().unwrap()))
-	}
-	.width(Length::Fill)
-	.padding(5)
-	.spacing(5)
+	app.origin_table_schema
+		.iter()
+		.fold(Row::new(), |base, column_spec| base.push(text(format!("{:?}", column_spec.r#type))))
+		.width(Length::Fill)
+		.padding(5)
+		.spacing(5)
 }
 
 fn show_db_types(app: &App) -> Row<'_, Message, Renderer> {

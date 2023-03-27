@@ -1,25 +1,37 @@
-use super::database::DbType;
+use crate::error::IResult;
 
-pub struct Column {
+use super::{database::DbType, type_parser_ch, type_parser_hbase, type_parser_mysql};
+
+#[derive(Debug, Default, Clone)]
+pub struct ColumnSpec {
 	pub name: String,
 	pub r#type: DataType,
-	pub nullable: bool,
 	pub comment: String,
 }
 
-impl Column {
-
+impl ColumnSpec {
+	pub fn create(
+		name: String,
+		type_str: String,
+		comment: String,
+		db_type: DbType,
+	) -> IResult<ColumnSpec> {
+		Ok(ColumnSpec { name: name, r#type: DataType::parse(type_str, db_type)?, comment })
+	}
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Clone)]
 pub enum DataType {
 	Int(usize),
+	UInt(usize),
 	Float(usize),
 	Decimal {
 		precision: u8,
 		scale: u8,
 	},
-	String(usize),
+	Bool,
+	String(Option<usize>),
+	Uuid,
 	Date,
 	Time,
 	DateTime {
@@ -31,30 +43,21 @@ pub enum DataType {
 		key: Box<DataType>,
 		value: Box<DataType>,
 	},
+	Nullable(Box<DataType>),
+	LowCardinality(Box<DataType>),
+	Tuple(Vec<(String, DataType)>),
+	Json,
 	#[default]
 	Unknown,
 }
 
 impl DataType {
-
-	pub fn parse(type_str: String, db_type: DbType) -> DataType {
+	pub fn parse(type_str: String, db_type: DbType) -> IResult<DataType> {
 		match db_type {
-			DbType::MySQL => Self::parse_mysql_type(type_str),
-			DbType::ClickHouse => Self::parse_ch_type(type_str),
-			DbType::HBase => Self::parse_hbase_type(type_str),
-			_ => Default::default(),
+			DbType::MySQL => type_parser_mysql::parse(type_str),
+			DbType::ClickHouse => type_parser_ch::parse(type_str),
+			DbType::HBase => type_parser_hbase::parse(type_str),
+			_ => Ok(Default::default()),
 		}
-	}
-
-	fn parse_ch_type(type_str: String) -> DataType {
-		DataType::Date
-	}
-
-	fn parse_mysql_type(type_str: String) -> DataType {
-		DataType::Date
-	}
-
-	fn parse_hbase_type(type_str: String) -> DataType {
-		DataType::Date
 	}
 }

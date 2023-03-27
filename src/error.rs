@@ -23,6 +23,9 @@ pub enum IError {
 	#[error("Validate error: {0}")]
 	ValidateError(#[from] validator::ValidationErrors),
 
+	#[error("Parse number error: {0}")]
+	ParseIntError(#[from] core::num::ParseIntError),
+
 	#[error("Prompt error: {0}")]
 	PromptError(String),
 

@@ -1,12 +1,12 @@
-use super::{column::Column, database::DbType};
+use super::{column::ColumnSpec, database::DbType};
 
 pub struct Table<'a> {
 	pub name: String,
 	pub database: String,
 	pub r#type: DbType,
-	pub columns: Vec<Column>,
-	pub primary_keys: Option<Vec<&'a Column>>,
-	pub order_by: Option<Vec<&'a Column>>,
+	pub columns: Vec<ColumnSpec>,
+	pub primary_keys: Option<Vec<&'a ColumnSpec>>,
+	pub order_by: Option<Vec<&'a ColumnSpec>>,
 	pub engine: String,
 }
 

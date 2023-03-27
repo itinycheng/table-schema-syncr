@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
 	error::{IError, IResult},
-	mapping::database::DbType,
+	mapping::{column::ColumnSpec, database::DbType},
 	store::conn_conf::ConnConf,
 };
 
@@ -85,18 +85,39 @@ impl DBClient {
 		}
 	}
 
-	pub fn table_schema(&self, database: &String, table: &String) -> IResult<String> {
+	pub fn table_schema(&self, database: &String, table: &String) -> IResult<Vec<ColumnSpec>> {
 		match self {
-			DBClient::ClickHouse(_) => DBQuery::<{ DbType::DB_CLICK_HOUSE }, String>::query_one(
-				self,
-				format!("show create table {}.{}", database, table),
-			)
-			.map(|schema| schema.unwrap_or("".to_owned())),
-			DBClient::Mysql(_) => DBQuery::<{ DbType::DB_MYSQL }, (String, String)>::query_one(
-				self,
-				format!("show create table {}.{}", database, table),
-			)
-			.map(|schema| schema.map(|tpl| tpl.1).unwrap_or("".to_owned())),
+			DBClient::ClickHouse(_) => {
+				let column_tuples = DBQuery::<{ DbType::DB_CLICK_HOUSE }, (String, String, String)>::query_list(
+					self,
+					format!("select name, type, comment from system.columns where database = '{}' and table = '{}'", database, table),
+				)?;
+
+				let mut columns = Vec::with_capacity(column_tuples.len());
+				for tuple in column_tuples {
+					columns.push(ColumnSpec::create(
+						tuple.0,
+						tuple.1,
+						tuple.2,
+						DbType::ClickHouse,
+					)?);
+				}
+				Ok(columns)
+			}
+			DBClient::Mysql(_) => {
+				let column_tuples = DBQuery::<{ DbType::DB_MYSQL }, (String, String)>::query_one(
+					self,
+					format!("show create table {}.{}", database, table),
+				)?
+				.unwrap();
+
+				Ok(vec![ColumnSpec::create(
+					column_tuples.0,
+					column_tuples.1,
+					"".to_owned(),
+					DbType::MySQL,
+				)?])
+			}
 		}
 	}
 }
