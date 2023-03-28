@@ -11,7 +11,10 @@ pub mod util;
 
 pub fn main() -> error::IResult<()> {
 	conf::app_init();
-	App::run(Settings::default())?;
+	App::run(Settings {
+		default_font: Some(include_bytes!("../fonts/fang_song.ttf")),
+		..Default::default()
+	})?;
 	Ok(())
 }
 

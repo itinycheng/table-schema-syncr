@@ -36,7 +36,7 @@ pub enum DataType {
 	Time,
 	DateTime {
 		precision: u8,
-		timezone: String,
+		timezone: Option<String>,
 	},
 	Array(Box<DataType>),
 	Map {

@@ -26,7 +26,7 @@ pub fn parse<T: AsRef<str>>(type_str: T) -> IResult<DataType> {
 		"UUID" => DataType::Uuid,
 		"Date" | "Date32" => DataType::Date,
 		s if s.starts_with("Decimal(") => {
-			let sub_str = &s[("Decimal(".len())..(s.len() - 1)];
+			let sub_str = &s[8..(s.len() - 1)];
 			let idx = sub_str.find(",").expect("Wrong decimal type!");
 			DataType::Decimal {
 				precision: sub_str[..idx].parse()?,
@@ -53,16 +53,16 @@ pub fn parse<T: AsRef<str>>(type_str: T) -> IResult<DataType> {
 			let precision = 77 - (f64::log10(scale as f64)).ceil() as u8;
 			DataType::Decimal { precision, scale }
 		}
-		s if s.starts_with("DateTime") => {
-			DataType::DateTime { precision: 0, timezone: s[9..(s.len() - 1)].replace('\'', "") }
-		}
+		s if s.starts_with("DateTime(") || s == "DateTime" => DataType::DateTime {
+			precision: 0,
+			timezone: if s.len() > 9 { Some(s[9..(s.len() - 1)].replace('\'', "")) } else { None },
+		},
 		s if s.starts_with("DateTime64") => {
-			let sub_str = &s[11..(s.len() - 1)];
-			let idx = sub_str.find(",").expect("Wrong DateTime64 type!");
-			DataType::DateTime {
-				precision: sub_str[..idx].parse()?,
-				timezone: sub_str[(idx + 1)..].replace('\'', ""),
-			}
+			let mut parts = s[11..(s.len() - 1)].splitn(2, ',');
+			let precision = parts.next().expect("Wrong DateTime64 type").parse::<u8>()?;
+			let timezone =
+				if let Some(zone) = parts.next() { Some(zone.replace('\'', "")) } else { None };
+			DataType::DateTime { precision, timezone }
 		}
 		s if s.starts_with("Nullable") => {
 			let sub_str = &s[9..(s.len() - 1)];

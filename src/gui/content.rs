@@ -43,13 +43,19 @@ pub fn view(app: &App) -> Container<Message, Renderer> {
 	content_wrapper
 }
 
-fn show_table_schema(app: &App) -> Row<'_, Message, Renderer> {
+fn show_table_schema(app: &App) -> Column<'_, Message, Renderer> {
 	app.origin_table_schema
 		.iter()
-		.fold(Row::new(), |base, column_spec| base.push(text(format!("{:?}", column_spec.r#type))))
+		.fold(Column::new(), |base, column_spec| {
+			base.push(
+				Row::new()
+					.push(text(&column_spec.name).width(Length::FillPortion(1)))
+					.push(text(format!("{:?}", &column_spec.r#type)).width(Length::FillPortion(1)))
+					.push(text(&column_spec.comment).width(Length::FillPortion(2))),
+			)
+		})
 		.width(Length::Fill)
-		.padding(5)
-		.spacing(5)
+		.spacing(10)
 }
 
 fn show_db_types(app: &App) -> Row<'_, Message, Renderer> {
