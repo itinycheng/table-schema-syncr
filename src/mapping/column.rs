@@ -1,4 +1,7 @@
-use crate::error::IResult;
+use core::any::Any;
+use mysql::consts::ColumnType;
+
+use crate::error::{IError, IResult};
 
 use super::{database::DbType, type_parser_ch, type_parser_hbase, type_parser_mysql};
 
@@ -10,18 +13,19 @@ pub struct ColumnSpec {
 }
 
 impl ColumnSpec {
-	pub fn create(
+	pub fn create<T: Any + 'static>(
 		name: String,
-		type_str: String,
+		any_type: T,
 		comment: String,
 		db_type: DbType,
 	) -> IResult<ColumnSpec> {
-		Ok(ColumnSpec { name: name, r#type: DataType::parse(type_str, db_type)?, comment })
+		Ok(ColumnSpec { name: name, r#type: DataType::parse(any_type, db_type)?, comment })
 	}
 }
 
 #[derive(Debug, Default, Clone)]
 pub enum DataType {
+	Null,
 	Int(usize),
 	UInt(usize),
 	Float(usize),
@@ -52,11 +56,23 @@ pub enum DataType {
 }
 
 impl DataType {
-	pub fn parse(type_str: String, db_type: DbType) -> IResult<DataType> {
+	pub fn parse<T: Any + 'static>(any_type: T, db_type: DbType) -> IResult<DataType> {
 		match db_type {
-			DbType::MySQL => type_parser_mysql::parse(type_str),
-			DbType::ClickHouse => type_parser_ch::parse(type_str),
-			DbType::HBase => type_parser_hbase::parse(type_str),
+			DbType::MySQL => type_parser_mysql::parse(
+				*(&any_type as &dyn Any).downcast_ref::<ColumnType>().ok_or(
+					IError::PromptError("Can't downcast type value to ColumnType".to_owned()),
+				)?,
+			),
+			DbType::ClickHouse => type_parser_ch::parse(
+				&(&any_type as &dyn Any)
+					.downcast_ref::<String>()
+					.ok_or(IError::PromptError("Can't downcast type value to String".to_owned()))?[..],
+			),
+			DbType::HBase => type_parser_hbase::parse(
+				&(&any_type as &dyn Any)
+					.downcast_ref::<String>()
+					.ok_or(IError::PromptError("Can't downcast type value to String".to_owned()))?[..],
+			),
 			_ => Ok(Default::default()),
 		}
 	}

@@ -1,5 +1,5 @@
 use ::clickhouse::Client;
-use ::mysql::Pool;
+use ::mysql::{Pool, Row};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -93,30 +93,35 @@ impl DBClient {
 					format!("select name, type, comment from system.columns where database = '{}' and table = '{}'", database, table),
 				)?;
 
-				let mut columns = Vec::with_capacity(column_tuples.len());
+				let mut column_specs = Vec::with_capacity(column_tuples.len());
 				for tuple in column_tuples {
-					columns.push(ColumnSpec::create(
+					column_specs.push(ColumnSpec::create(
 						tuple.0,
 						tuple.1,
 						tuple.2,
 						DbType::ClickHouse,
 					)?);
 				}
-				Ok(columns)
+				Ok(column_specs)
 			}
 			DBClient::Mysql(_) => {
-				let column_tuples = DBQuery::<{ DbType::DB_MYSQL }, (String, String)>::query_one(
+				let Some(row) = DBQuery::<{ DbType::DB_MYSQL }, Row>::query_one(
 					self,
-					format!("show create table {}.{}", database, table),
-				)?
-				.unwrap();
+					format!("select * from {}.{}", database, table),
+				)? else {
+					return Ok(vec![]);
+				};
 
-				Ok(vec![ColumnSpec::create(
-					column_tuples.0,
-					column_tuples.1,
-					"".to_owned(),
-					DbType::MySQL,
-				)?])
+				let mut column_specs = Vec::with_capacity(row.columns_ref().len());
+				for column in row.columns_ref() {
+					column_specs.push(ColumnSpec::create(
+						column.name_str().to_string(),
+						column.column_type(),
+						"".to_owned(),
+						DbType::MySQL,
+					)?)
+				}
+				Ok(column_specs)
 			}
 		}
 	}
