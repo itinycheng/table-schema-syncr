@@ -9,17 +9,16 @@ pub fn parse(column_type: ColumnType) -> IResult<DataType> {
 		ColumnType::MYSQL_TYPE_DECIMAL | ColumnType::MYSQL_TYPE_NEWDECIMAL => {
 			DataType::Decimal { precision: 10, scale: 0 }
 		}
-		ColumnType::MYSQL_TYPE_TINY => DataType::Int(8),
-		ColumnType::MYSQL_TYPE_SHORT => DataType::Int(16),
-		ColumnType::MYSQL_TYPE_LONG => DataType::Int(64),
+		ColumnType::MYSQL_TYPE_TINY => DataType::Int { size: 1, unsigned: false },
+		ColumnType::MYSQL_TYPE_SHORT => DataType::Int { size: 2, unsigned: false },
+		ColumnType::MYSQL_TYPE_INT24 => DataType::Int { size: 3, unsigned: false },
+		ColumnType::MYSQL_TYPE_LONG => DataType::Int { size: 8, unsigned: false },
+		ColumnType::MYSQL_TYPE_LONGLONG => DataType::Int { size: 16, unsigned: false },
 		ColumnType::MYSQL_TYPE_FLOAT => DataType::Float(32),
 		ColumnType::MYSQL_TYPE_DOUBLE => DataType::Float(64),
-		ColumnType::MYSQL_TYPE_NULL => DataType::Null,
 		ColumnType::MYSQL_TYPE_TIMESTAMP | ColumnType::MYSQL_TYPE_TIMESTAMP2 => {
 			DataType::DateTime { precision: 0, timezone: None }
 		}
-		ColumnType::MYSQL_TYPE_LONGLONG => DataType::Int(128),
-		ColumnType::MYSQL_TYPE_INT24 => DataType::Int(24),
 		ColumnType::MYSQL_TYPE_DATE | ColumnType::MYSQL_TYPE_NEWDATE => DataType::Date,
 		ColumnType::MYSQL_TYPE_TIME | ColumnType::MYSQL_TYPE_TIME2 => DataType::Time,
 		ColumnType::MYSQL_TYPE_DATETIME | ColumnType::MYSQL_TYPE_DATETIME2 => {
@@ -39,6 +38,9 @@ pub fn parse(column_type: ColumnType) -> IResult<DataType> {
 		| ColumnType::MYSQL_TYPE_LONG_BLOB => DataType::String(None),
 		ColumnType::MYSQL_TYPE_GEOMETRY
 		| ColumnType::MYSQL_TYPE_ENUM
-		| ColumnType::MYSQL_TYPE_SET => Err(IError::PromptError("Unsupported type".to_owned()))?,
+		| ColumnType::MYSQL_TYPE_NULL
+		| ColumnType::MYSQL_TYPE_SET => {
+			Err(IError::PromptError(format!("Unsupported type: {:?}", column_type)))?
+		}
 	})
 }

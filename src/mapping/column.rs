@@ -25,9 +25,10 @@ impl ColumnSpec {
 
 #[derive(Debug, Default, Clone)]
 pub enum DataType {
-	Null,
-	Int(usize),
-	UInt(usize),
+	Int {
+		size: usize,
+		unsigned: bool,
+	},
 	Float(usize),
 	Decimal {
 		precision: u8,
@@ -75,5 +76,53 @@ impl DataType {
 			),
 			_ => Ok(Default::default()),
 		}
+	}
+
+	pub fn to_type(&self, db_type: DbType) -> String {
+		match db_type {
+			DbType::MySQL => self.to_mysql_type(),
+			DbType::ClickHouse => self.to_ch_type(),
+			DbType::HBase => "".to_owned(),
+			DbType::Unknown => panic!("Unsupported db type"),
+		}
+	}
+
+	pub fn to_mysql_type(&self) -> String {
+		match self {
+			DataType::Int { size, unsigned } => {
+				const INT_TYPES: [&str; 6] =
+					["NULL", "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIGINT"];
+				let type_string = INT_TYPES.get(*size).unwrap_or(&INT_TYPES[5]).to_string();
+				type_string + (if *unsigned { " unsigned" } else { "" })
+			}
+			DataType::Float(size) => match size {
+				&4 => "FLOAT",
+				_ => "DOUBLE",
+			}
+			.to_owned(),
+			DataType::Decimal { precision, scale } => {
+				format!("DECIMAL({}, {})", precision, scale)
+			}
+			DataType::Bool => "BOOL".to_owned(),
+			DataType::String(size_opt) => match size_opt {
+				&Some(size) if size > 65535 => "LONGTEXT".to_owned(),
+				&Some(size) => format!("VARCHAR({})", size),
+				None => "VARCHAR(255)".to_owned(),
+			},
+			DataType::Uuid => "VARCHAR(36)".to_owned(),
+			DataType::Date => "DATE".to_owned(),
+			DataType::Time => "TIME".to_owned(),
+			DataType::DateTime { .. } => "DATETIME".to_owned(),
+			DataType::Tuple(_) | DataType::Array(_) | DataType::Map { .. } => "VARCHAR".to_owned(),
+			DataType::Nullable(data_type) | DataType::LowCardinality(data_type) => {
+				data_type.to_mysql_type()
+			}
+			DataType::Json => "JSON".to_owned(),
+			DataType::Unknown => "Unknown".to_owned(),
+		}
+	}
+
+	pub fn to_ch_type(&self) -> String {
+		"".to_owned()
 	}
 }

@@ -47,10 +47,15 @@ fn show_table_schema(app: &App) -> Column<'_, Message, Renderer> {
 	app.origin_table_schema
 		.iter()
 		.fold(Column::new(), |base, column_spec| {
+			let adopted_type = match app.selected_db_type {
+				Some(db_type) => column_spec.r#type.to_type(db_type),
+				None => format!("{:?}", &column_spec.r#type),
+			};
+
 			base.push(
 				Row::new()
 					.push(text(&column_spec.name).width(Length::FillPortion(1)))
-					.push(text(format!("{:?}", &column_spec.r#type)).width(Length::FillPortion(1)))
+					.push(text(adopted_type).width(Length::FillPortion(1)))
 					.push(text(&column_spec.comment).width(Length::FillPortion(2))),
 			)
 		})
