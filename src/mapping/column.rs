@@ -123,6 +123,57 @@ impl DataType {
 	}
 
 	pub fn to_ch_type(&self) -> String {
-		"".to_owned()
+		match self {
+			DataType::Int { size, unsigned } => {
+				format!("{}{}", if *unsigned { "Uint" } else { "Int" }, size * 8)
+			}
+			DataType::Float(size) => {
+				format!("Float{}", size * 8)
+			}
+			DataType::Decimal { precision, scale } => {
+				format!("Decimal({},{})", precision, scale)
+			}
+			DataType::Bool => "Bool".to_owned(),
+			DataType::String(_) => "String".to_owned(),
+			DataType::Uuid => "UUID".to_owned(),
+			DataType::Date => "Date".to_owned(),
+			DataType::Time => "DateTime()".to_owned(),
+			DataType::DateTime { precision, timezone } => {
+				let mut buf = precision.to_string();
+				if let Some(tz) = timezone {
+					buf.push(',');
+					buf.push_str(tz);
+				}
+				format!("Decimal64({})", buf)
+			}
+			DataType::Array(sub_type) => {
+				format!("Array({})", Self::to_ch_type(sub_type))
+			}
+			DataType::Map { key, value } => {
+				format!("Map({}, {})", Self::to_ch_type(key), Self::to_ch_type(value))
+			}
+			DataType::Nullable(sub_type) => {
+				format!("Nullable({})", Self::to_ch_type(sub_type))
+			}
+			DataType::LowCardinality(sub_type) => {
+				format!("LowCardinality({})", Self::to_ch_type(sub_type))
+			}
+			DataType::Tuple(sub_types) => {
+				let joined = sub_types
+					.into_iter()
+					.map(|tuple| {
+						if tuple.0.len() > 0 {
+							format!("{} {}", &tuple.0, Self::to_ch_type(&tuple.1))
+						} else {
+							tuple.0.to_owned()
+						}
+					})
+					.collect::<Vec<_>>()[..]
+					.join(",");
+				format!("Tuple({})", joined)
+			}
+			DataType::Json => "JSON".to_owned(),
+			DataType::Unknown => "Unknown".to_owned(),
+		}
 	}
 }

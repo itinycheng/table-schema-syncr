@@ -14,8 +14,8 @@ pub fn parse(column_type: ColumnType) -> IResult<DataType> {
 		ColumnType::MYSQL_TYPE_INT24 => DataType::Int { size: 3, unsigned: false },
 		ColumnType::MYSQL_TYPE_LONG => DataType::Int { size: 8, unsigned: false },
 		ColumnType::MYSQL_TYPE_LONGLONG => DataType::Int { size: 16, unsigned: false },
-		ColumnType::MYSQL_TYPE_FLOAT => DataType::Float(32),
-		ColumnType::MYSQL_TYPE_DOUBLE => DataType::Float(64),
+		ColumnType::MYSQL_TYPE_FLOAT => DataType::Float(4),
+		ColumnType::MYSQL_TYPE_DOUBLE => DataType::Float(8),
 		ColumnType::MYSQL_TYPE_TIMESTAMP | ColumnType::MYSQL_TYPE_TIMESTAMP2 => {
 			DataType::DateTime { precision: 0, timezone: None }
 		}
