@@ -25,7 +25,7 @@ pub fn view<'a>(app: &App) -> Container<'a, Message, Renderer> {
 							.style(button_style(
 								matches!(&app.selected_conn, Some(uuid) if uuid == &col.1.uuid)
 							))
-							.on_press(Message::SelectedConnection(col.1.uuid.clone())),
+							.on_press(Message::SelectConnection(col.1.uuid.clone())),
 						button(edit_icon())
 							.style(theme::Button::Secondary)
 							.on_press(Message::EditConnection(Some(col.0))),

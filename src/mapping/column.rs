@@ -83,11 +83,12 @@ impl DataType {
 			DbType::MySQL => self.to_mysql_type(),
 			DbType::ClickHouse => self.to_ch_type(),
 			DbType::HBase => "".to_owned(),
+			DbType::Internal => format!("{:?}", self),
 			DbType::Unknown => panic!("Unsupported db type"),
 		}
 	}
 
-	pub fn to_mysql_type(&self) -> String {
+	fn to_mysql_type(&self) -> String {
 		match self {
 			DataType::Int { size, unsigned } => {
 				const INT_TYPES: [&str; 6] =
@@ -122,7 +123,7 @@ impl DataType {
 		}
 	}
 
-	pub fn to_ch_type(&self) -> String {
+	fn to_ch_type(&self) -> String {
 		match self {
 			DataType::Int { size, unsigned } => {
 				format!("{}{}", if *unsigned { "Uint" } else { "Int" }, size * 8)
@@ -168,7 +169,7 @@ impl DataType {
 							tuple.0.to_owned()
 						}
 					})
-					.collect::<Vec<_>>()[..]
+					.collect::<Vec<_>>()
 					.join(",");
 				format!("Tuple({})", joined)
 			}

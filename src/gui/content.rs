@@ -44,19 +44,18 @@ pub fn view(app: &App) -> Container<Message, Renderer> {
 }
 
 fn show_table_schema(app: &App) -> Column<'_, Message, Renderer> {
+	let Some(db_type) = app.selected_db_type else {
+		return Column::new();
+	};
+
 	app.origin_table_schema
 		.iter()
 		.fold(Column::new(), |base, column_spec| {
-			let adopted_type = match app.selected_db_type {
-				Some(db_type) => column_spec.r#type.to_type(db_type),
-				None => format!("{:?}", &column_spec.r#type),
-			};
-
 			base.push(
 				Row::new()
 					.push(text(&column_spec.name).width(Length::FillPortion(1)))
-					.push(text(adopted_type).width(Length::FillPortion(1)))
-					.push(text(&column_spec.comment).width(Length::FillPortion(2))),
+					.push(text(column_spec.r#type.to_type(db_type)).width(Length::FillPortion(1)))
+					.push(text(&column_spec.comment).width(Length::FillPortion(1))),
 			)
 		})
 		.width(Length::Fill)
@@ -74,7 +73,7 @@ fn show_db_types(app: &App) -> Row<'_, Message, Renderer> {
 					.style(button_style(
 						matches!(&app.selected_db_type, Some(selected) if selected == db_type),
 					))
-					.on_press(Message::SelectedDBType(db_type.clone())),
+					.on_press(Message::SelectDBType(db_type.clone())),
 			)
 		})
 	}
@@ -94,7 +93,7 @@ fn show_tables(app: &App) -> Row<'_, Message, Renderer> {
 					.style(button_style(
 						matches!(&app.selected_table, Some(selected) if selected == table),
 					))
-					.on_press(Message::SelectedTable(table.clone())),
+					.on_press(Message::SelectTable(table.clone())),
 			)
 		})
 	}
@@ -114,7 +113,7 @@ fn show_databases(app: &App) -> Row<'_, Message, Renderer> {
 					.style(button_style(
 						matches!(&app.selected_db, Some(selected) if selected == database),
 					))
-					.on_press(Message::SelectedDatabase(database.clone())),
+					.on_press(Message::SelectDatabase(database.clone())),
 			)
 		})
 	}

@@ -39,12 +39,12 @@ pub struct App {
 pub enum Message {
 	EditConnection(Option<usize>),
 	DeleteConnection(usize),
-	SelectedConnection(String),
+	SelectConnection(String),
 	ShowDatabases(Option<Vec<String>>),
-	SelectedDatabase(String),
+	SelectDatabase(String),
 	ShowTables(Option<Vec<String>>),
-	SelectedTable(String),
-	SelectedDBType(DbType),
+	SelectTable(String),
+	SelectDBType(DbType),
 	ShowTableSchema(Option<Vec<ColumnSpec>>),
 	SubmitConnForm,
 	CloseConnForm,
@@ -101,7 +101,7 @@ impl Application for App {
 
 				Command::none()
 			}
-			Message::SelectedConnection(uuid) => {
+			Message::SelectConnection(uuid) => {
 				self.reset_connection(&uuid);
 				Command::perform(
 					async move {
@@ -117,7 +117,7 @@ impl Application for App {
 				self.databases = databases.unwrap_or_default();
 				Command::none()
 			}
-			Message::SelectedDatabase(database) => {
+			Message::SelectDatabase(database) => {
 				self.reset_database(&database);
 				let uuid = self.selected_conn.clone().unwrap();
 				Command::perform(
@@ -134,12 +134,12 @@ impl Application for App {
 				self.tables = tables.unwrap_or_default();
 				Command::none()
 			}
-			Message::SelectedTable(table) => {
+			Message::SelectTable(table) => {
 				self.selected_table.replace(table);
 				self.selected_db_type.take();
 				Command::none()
 			}
-			Message::SelectedDBType(db_type) => {
+			Message::SelectDBType(db_type) => {
 				self.selected_db_type.replace(db_type);
 				let conn_uuid = self.selected_conn.clone().unwrap();
 				let database = self.selected_db.clone().unwrap();
