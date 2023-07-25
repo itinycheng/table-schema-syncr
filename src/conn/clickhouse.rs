@@ -65,8 +65,8 @@ impl<T: ClickHouseRow + for<'a> Deserialize<'a>> DBQuery<{ DbType::DB_CLICK_HOUS
 	}
 }
 
-fn to_compression(str: &String) -> Compression {
-	match &*str.to_lowercase() {
+fn to_compression(str: &str) -> Compression {
+	match str {
 		"Lz4" => Compression::Lz4,
 		"Lz4Hc(1)" => Compression::Lz4Hc(1),
 		"Lz4Hc(4)" => Compression::Lz4Hc(4),

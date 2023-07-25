@@ -20,6 +20,21 @@ pub fn main() -> error::IResult<()> {
 
 #[cfg(test)]
 mod tests {
+	use std::{collections::HashMap, sync::Mutex};
+
+	use once_cell::sync::Lazy;
+
+	#[test]
+	fn test() {
+		static STATIC_MAP: Lazy<Mutex<HashMap<String, u32>>> =
+			Lazy::new(|| Mutex::new(HashMap::new()));
+
+		fn get_or_insert<'a, 'b>(key: &'a String, lazy_map: &'b Lazy<Mutex<HashMap<String, u32>>>) -> Option<&'b u32> {
+			let mut map = lazy_map.lock().unwrap();
+			map.entry(key.to_string()).and_modify(|num| *num += 1).or_insert(0);
+			lazy_map.lock().unwrap().get(key)
+		}
+	}
 
 	#[test]
 	fn test_raw_pointer() {
